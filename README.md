@@ -2,17 +2,15 @@
 
 A deep learning pipeline for automatic 3D character rigging — predicting skeleton structure and skinning weights from raw 3D mesh geometry.
 
-Based on the [RigNet dataset](https://github.com/zhan-xu/RigNet) (2703 3D character models with ground-truth rigs).
+Based on the [RigNet dataset](https://github.com/zhan-xu/RigNet) (2703 preprocessed 3D character models with ground-truth rigs).
 
 ---
 
 ## Pipeline Overview
 
-The project is structured as 8 sequential phases. Each phase produces outputs consumed by the next.
-
 | Phase | Name | Status |
 |-------|------|--------|
-| **1** | Point Cloud Dataset Generation | Partially complete — [see docs](docs/phase_1.md) |
+| **1** | Point Cloud Dataset Generation | Complete |
 | 2 | Point Cloud Tokenization | Not started |
 | 3 | Skeleton Joint Prediction | Not started |
 | 4 | Bone Connectivity Prediction | Not started |
@@ -23,36 +21,32 @@ The project is structured as 8 sequential phases. Each phase produces outputs co
 
 ---
 
-## Phase Documentation
-
-Detailed notes for each phase live in [`docs/`](docs/):
-
-- [Phase 1 — Point Cloud Dataset Generation](docs/phase_1.md)
-
----
-
 ## Project Structure
 
 ```
 riganything-mini/
-├── RignetDataset/
-│   ├── fbx/                    # Raw FBX models (2703 shapes)
+├── Dataset/                        # RigNet preprocessed dataset
+│   ├── obj_remesh/                 # Remeshed OBJ meshes (1K–5K verts)
+│   ├── rig_info_remesh/            # Rig info txt files (joints, hierarchy, skinning)
+│   ├── pretrain_attention/         # Pre-computed attention supervision (Phase 3/4)
+│   ├── volumetric_geodesic/        # Pre-computed geodesic distances (Phase 5)
+│   ├── vox/                        # Voxelized models
 │   ├── train_final.txt
 │   ├── val_final.txt
 │   └── test_final.txt
 ├── pointClouds/
-│   └── fbx/                    # Generated point clouds (Phase 1 output)
+│   └── obj_remesh/                 # Phase 1 output
 │       ├── <id>_pointcloud.npy     [1024, 6]  xyz + normals
 │       ├── <id>_points.npy         [1024, 3]  positions
 │       ├── <id>_normals.npy        [1024, 3]  outward normals
 │       ├── <id>_skeleton.npy       [K, 4]     joints + BFS parent index
 │       └── <id>_skinning.npy       [V, K]     skinning weights
 ├── docs/
-│   └── phase_1.md              # Phase 1 notes and walkthrough
-├── phase1_dataset.py           # Phase 1 script
-├── main.py                     # Training entrypoint
-├── dataset_explorer.py         # Visualisation utilities
-├── CLAUDE.md                   # Claude Code project notes
+│   └── phase_1.md
+├── dataset.py                      # Phase 1: mesh → point cloud + skeleton NPY
+├── tests/
+│   └── phase1_test.py              # Phase 1 validation + visualisation
+├── CLAUDE.md
 └── README.md
 ```
 
@@ -60,25 +54,39 @@ riganything-mini/
 
 ## Quick Start
 
+### Environment
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install open3d numpy
+```
+
 ### Phase 1 — Generate Point Clouds
 
 ```bash
-# Install dependencies
-pip install open3d trimesh fbxloader numpy
+# Quick test (5 shapes)
+python dataset.py --max_shapes 5
 
-# Convert all shapes (resumes safely if interrupted)
-python phase1_dataset.py --split all --max_shapes 2703 --resume
-
-# Default run (500 shapes)
-python phase1_dataset.py
+# Full run (all 2703 shapes, resumes safely if interrupted)
+python dataset.py --split all --max_shapes 2703 --resume
 ```
 
-See [docs/phase_1.md](docs/phase_1.md) for a full walkthrough of the Phase 1 code.
+### Phase 1 — Validate & Visualise
+
+```bash
+# Runs all checks + saves PNG renders to tests/output/
+python tests/phase1_test.py
+
+# Test a specific shape
+python tests/phase1_test.py --shape_id 10000
+```
+
+See [docs/phase_1.md](docs/phase_1.md) for a full walkthrough.
 
 ---
 
 ## Requirements
 
 - Python 3.10+
-- `open3d`, `trimesh`, `fbxloader`, `numpy`
-- Blender (optional — required only for skeleton/skinning extraction)
+- `open3d`, `numpy`
