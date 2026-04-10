@@ -1,7 +1,7 @@
-# Phase 1 — Point Cloud Dataset Generation
+# Phase 1: Point Cloud Dataset Generation
 
 ## Overview
-
+<img width="1257" height="830" alt="phase1_code" src="https://github.com/user-attachments/assets/cd47353a-d3de-4f72-ac01-aa8d690dcd63" />
 The [RigNet dataset](https://github.com/zhan-xu/RigNet) provides **2703 preprocessed 3D character models** with ground-truth rig data. In this phase, each model is converted into a **point cloud of 1024 points** with outward surface normals, plus skeleton and skinning arrays.
 
 Source: `Dataset/obj_remesh/` (remeshed OBJ meshes, 1K–5K verts each)  
