@@ -1,6 +1,5 @@
-# RigAnything-Mini
+<img width="908" height="552" alt="intro" src="https://github.com/user-attachments/assets/dbd52c64-c73e-440a-a622-9a2001dc6826" />
 
-A deep learning pipeline for automatic 3D character rigging — predicting skeleton structure and skinning weights from raw 3D mesh geometry.
 
 Based on the [RigNet dataset](https://github.com/zhan-xu/RigNet) (2703 preprocessed 3D character models with ground-truth rigs).
 
