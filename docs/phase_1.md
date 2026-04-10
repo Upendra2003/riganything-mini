@@ -2,7 +2,25 @@
 
 ## Overview
 <img width="1257" height="830" alt="phase1_code" src="https://github.com/user-attachments/assets/cd47353a-d3de-4f72-ac01-aa8d690dcd63" />
+
 The [RigNet dataset](https://github.com/zhan-xu/RigNet) provides **2703 preprocessed 3D character models** with ground-truth rig data. In this phase, each model is converted into a **point cloud of 1024 points** with outward surface normals, plus skeleton and skinning arrays.
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <img width="1088" height="505" alt="training_middle" src="https://github.com/user-attachments/assets/733272cf-20e0-48c5-b557-0737e06feb01" />
+        <br />
+        <strong>During Training</strong>
+      </td>
+      <td align="center">
+        <img width="1088" height="505" alt="fully_trained" src="https://github.com/user-attachments/assets/843dfb35-a34f-421a-a7ac-d508a01bbf6b" />
+        <br />
+        <strong>After Training</strong>
+      </td>
+    </tr>
+  </table>
+</div>
 
 Source: `Dataset/obj_remesh/` (remeshed OBJ meshes, 1K–5K verts each)  
 Output: `pointClouds/obj_remesh/` (NPY arrays per shape)
