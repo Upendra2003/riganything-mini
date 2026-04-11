@@ -9,8 +9,8 @@ Based on the [RigNet dataset](https://github.com/zhan-xu/RigNet) (2703 preproces
 
 | Phase | Name | Status |
 |-------|------|--------|
-| **1** | Point Cloud Dataset Generation | Complete |
-| **2** | Shape & Skeleton Tokenizers | Complete |
+| **1** | Point Cloud Dataset Generation | [docs/phase_1.md](docs/phase_1.md) |
+| **2** | Shape & Skeleton Tokenizers | [docs/phase_2.md](docs/phase_2.md) |
 | 3 | Skeleton Joint Prediction | Not started |
 | 4 | Bone Connectivity Prediction | Not started |
 | 5 | Skinning Weight Prediction | Not started |
