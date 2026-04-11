@@ -10,7 +10,7 @@ Based on the [RigNet dataset](https://github.com/zhan-xu/RigNet) (2703 preproces
 | Phase | Name | Status |
 |-------|------|--------|
 | **1** | Point Cloud Dataset Generation | Complete |
-| 2 | Point Cloud Tokenization | Not started |
+| **2** | Shape & Skeleton Tokenizers | Complete |
 | 3 | Skeleton Joint Prediction | Not started |
 | 4 | Bone Connectivity Prediction | Not started |
 | 5 | Skinning Weight Prediction | Not started |
@@ -40,11 +40,18 @@ riganything-mini/
 │       ├── <id>_normals.npy        [1024, 3]  outward normals
 │       ├── <id>_skeleton.npy       [K, 4]     joints + BFS parent index
 │       └── <id>_skinning.npy       [V, K]     skinning weights
+├── tokens/
+│   └── obj_remesh/                 # Phase 2 output
+│       ├── <id>_H.pt               [1024, 1024]  shape tokens
+│       └── <id>_T.pt               [K, 1024]     skeleton tokens
 ├── docs/
-│   └── phase_1.md
+│   ├── phase_1.md
+│   └── phase_2.md
 ├── dataset.py                      # Phase 1: mesh → point cloud + skeleton NPY
+├── tokenizer.py                    # Phase 2: point cloud + skeleton → tokens
 ├── tests/
-│   └── phase1_test.py              # Phase 1 validation + visualisation
+│   ├── phase1_test.py              # Phase 1 validation + visualisation
+│   └── phase2_test.py              # Phase 2 validation
 ├── CLAUDE.md
 └── README.md
 ```
@@ -82,6 +89,23 @@ python tests/phase1_test.py --shape_id 10000
 ```
 
 See [docs/phase_1.md](docs/phase_1.md) for a full walkthrough.
+
+---
+
+### Phase 2 — Tokenize Shapes & Skeletons
+
+```bash
+# Full run (all 2703 shapes, resumes safely if interrupted)
+python tokenizer.py --max_shapes 2703 --resume
+```
+
+### Phase 2 — Validate
+
+```bash
+python tests/phase2_test.py
+```
+
+See [docs/phase_2.md](docs/phase_2.md) for a full walkthrough.
 
 ---
 
