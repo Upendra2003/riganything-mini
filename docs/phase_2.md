@@ -1,4 +1,5 @@
 # Phase 2: Shape and Skeleton Tokenizers
+<img width="1137" height="884" alt="phase2_mlp" src="https://github.com/user-attachments/assets/02489d09-f355-4410-8037-92bb34d2c74c" />
 
 ## Overview
 
