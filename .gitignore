@@ -4,3 +4,5 @@ ModelResource_RigNetv1_preproccessed
 Dataset
 Dataset.zip
 pointClouds
+checkpoints
+logs
