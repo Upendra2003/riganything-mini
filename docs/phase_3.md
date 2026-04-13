@@ -54,6 +54,27 @@ The additive mask M (added to pre-softmax logits, −∞ zeroes out after softma
 M[i, j] = 0    → token i can attend to token j
 M[i, j] = -inf → token i cannot attend to token j
 ```
+<div align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <img width="1088" height="505" alt="training_middle" src="https://github.com/user-attachments/assets/75c94c17-059c-48da-8169-35fec8c75d4e" />
+        <br />
+        <strong>Skeleton to Itself</strong>
+      </td>
+      <td align="center">
+        <img width="1088" height="505" alt="fully_trained" src="https://github.com/user-attachments/assets/cb49a22b-409d-4c20-8874-c669f5c01699" />
+        <br />
+        <strong>Skeleton to shape and previous skeleton</strong>
+      </td>
+     <td align="center">
+        <img width="1088" height="505" alt="fully_trained" src="https://github.com/user-attachments/assets/938ed9c9-583c-4cb9-a891-084587665750" />
+        <br />
+        <strong>Shape to shape</strong>
+      </td>
+    </tr>
+  </table>
+</div>
 
 | Query \ Key | Shape tokens (j < L) | Skeleton tokens (j ≥ L) |
 |-------------|----------------------|------------------------|
