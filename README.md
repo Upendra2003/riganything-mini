@@ -12,7 +12,7 @@ Based on the [RigNet dataset](https://github.com/zhan-xu/RigNet) (2703 preproces
 | **1** | Point Cloud Dataset Generation | [docs/phase_1.md](docs/phase_1.md) |
 | **2** | Shape & Skeleton Tokenizers | [docs/phase_2.md](docs/phase_2.md) |
 | **3** | Hybrid Attention Transformer | [docs/phase_3.md](docs/phase_3.md) |
-| **4** | Joint Diffusion Module | Not started |
+| **4** | Joint Diffusion Module **(Inprogress)** | [docs/phase_3.md](docs/phase_3.md)] |
 | 5 | Connectivity Prediction | Not started |
 | 6 | Skinnign Weight Prediction | Not started |
 | 7 | End-to-End Training | Not started |
