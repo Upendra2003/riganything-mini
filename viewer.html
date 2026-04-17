@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RigAnything — Results Viewer</title>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0d0d0f;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    padding: 16px 24px;
+    background: #111116;
+    border-bottom: 1px solid #2a2a3a;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  header h1 { font-size: 1.3rem; font-weight: 600; color: #fff; letter-spacing: 0.02em; }
+  header p  { font-size: 0.82rem; color: #888; }
+
+  .badge {
+    background: #1e2a3a;
+    border: 1px solid #2a4a6a;
+    color: #6ab0ff;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+
+  .col-labels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 10px 16px 0;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .col-label {
+    text-align: center;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .col-label .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .col-label.original .dot { background: #4a9eff; }
+  .col-label.predicted .dot { background: #ff6b35; }
+
+  .grid {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    gap: 12px;
+    flex: 1;
+    padding: 8px 16px 16px;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    min-height: 0;
+  }
+
+  .panel {
+    background: #14141a;
+    border: 1px solid #222230;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    min-height: 380px;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: #18181f;
+    border-bottom: 1px solid #222230;
+    flex-shrink: 0;
+  }
+  .panel-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #ccc;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .panel-title .icon { font-size: 0.9rem; }
+
+  .panel-meta {
+    font-size: 0.68rem;
+    color: #555;
+    text-align: right;
+    line-height: 1.4;
+  }
+
+  .canvas-wrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+  canvas { display: block; width: 100% !important; height: 100% !important; }
+
+  .controls-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: #111116;
+    border-top: 1px solid #222230;
+    flex-shrink: 0;
+  }
+  .ctrl-btn {
+    background: #1e1e2a;
+    border: 1px solid #333348;
+    color: #aaa;
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .ctrl-btn:hover { background: #2a2a3a; color: #fff; border-color: #4a4a6a; }
+  .ctrl-btn.active { background: #1e3a5a; border-color: #4a9eff; color: #6ab0ff; }
+
+  .hint {
+    margin-left: auto;
+    font-size: 0.65rem;
+    color: #444;
+    user-select: none;
+  }
+
+  .loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: #14141a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    z-index: 10;
+    transition: opacity 0.4s;
+  }
+  .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+  .spinner {
+    width: 28px; height: 28px;
+    border: 3px solid #222;
+    border-top-color: #4a9eff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 0.75rem; color: #555; }
+
+  #data-loading {
+    position: fixed; inset: 0;
+    background: #0d0d0f;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 16px; z-index: 1000;
+  }
+  #data-loading .big-spinner {
+    width: 48px; height: 48px;
+    border: 4px solid #222;
+    border-top-color: #4a9eff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  #data-loading h2 { font-size: 1.1rem; color: #ccc; }
+  #data-loading p  { font-size: 0.8rem; color: #555; }
+  #progress-bar-wrap {
+    width: 300px; height: 4px;
+    background: #1e1e2a; border-radius: 2px; overflow: hidden;
+  }
+  #progress-bar {
+    height: 100%; background: #4a9eff; border-radius: 2px;
+    width: 0%; transition: width 0.3s;
+  }
+
+  .legend {
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 0.65rem; color: #666;
+  }
+  .legend-swatch {
+    width: 10px; height: 10px; border-radius: 2px;
+  }
+</style>
+</head>
+<body>
+
+<div id="data-loading">
+  <div class="big-spinner"></div>
+  <h2>Loading RigAnything Results</h2>
+  <p>Decoding models and skeleton data...</p>
+  <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+</div>
+
+<header>
+  <div>
+    <h1>RigAnything — Results Viewer</h1>
+    <p>Interactive 3D visualization &mdash; original models vs. predicted rigs</p>
+  </div>
+  <span class="badge">SIGGRAPH 2025</span>
+</header>
+
+<div class="col-labels">
+  <div class="col-label original"><span class="dot"></span> Original Model</div>
+  <div class="col-label predicted"><span class="dot"></span> Predicted Skeleton</div>
+</div>
+
+<div class="grid">
+
+  <!-- Row 1: Spyro -->
+  <div class="row">
+    <div class="panel" id="panel-spyro-orig">
+      <div class="panel-header">
+        <div class="panel-title"><span class="icon">🐉</span> Spyro the Dragon</div>
+        <div class="panel-meta">Original · GLB · textured</div>
+      </div>
+      <div class="canvas-wrap">
+        <div class="loading-overlay" id="lo-spyro-orig"><div class="spinner"></div><span class="loading-text">Loading…</span></div>
+        <canvas id="c-spyro-orig"></canvas>
+      </div>
+      <div class="controls-bar">
+        <button class="ctrl-btn active" onclick="toggleWireframe('spyro-orig',this)">Solid</button>
+        <button class="ctrl-btn" onclick="resetCamera('spyro-orig')">Reset</button>
+        <span class="hint">Drag · Scroll · Right-drag</span>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-spyro-rig">
+      <div class="panel-header">
+        <div class="panel-title"><span class="icon">🦴</span> Spyro — Predicted Rig</div>
+        <div class="panel-meta">32 joints · 5 169 pts</div>
+      </div>
+      <div class="canvas-wrap">
+        <div class="loading-overlay" id="lo-spyro-rig"><div class="spinner"></div><span class="loading-text">Loading…</span></div>
+        <canvas id="c-spyro-rig"></canvas>
+      </div>
+      <div class="controls-bar">
+        <button class="ctrl-btn active" onclick="toggleMesh('spyro-rig',this)">Mesh</button>
+        <button class="ctrl-btn active" onclick="toggleSkeleton('spyro-rig',this)">Skeleton</button>
+        <button class="ctrl-btn active" onclick="toggleWeights('spyro-rig',this)">Weights</button>
+        <button class="ctrl-btn" onclick="resetCamera('spyro-rig')">Reset</button>
+        <span class="hint">Drag · Scroll · Right-drag</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Neo -->
+  <div class="row">
+    <div class="panel" id="panel-neo-orig">
+      <div class="panel-header">
+        <div class="panel-title"><span class="icon">🤖</span> Neo Crispytyph</div>
+        <div class="panel-meta">Original · GLB · textured</div>
+      </div>
+      <div class="canvas-wrap">
+        <div class="loading-overlay" id="lo-neo-orig"><div class="spinner"></div><span class="loading-text">Loading…</span></div>
+        <canvas id="c-neo-orig"></canvas>
+      </div>
+      <div class="controls-bar">
+        <button class="ctrl-btn active" onclick="toggleWireframe('neo-orig',this)">Solid</button>
+        <button class="ctrl-btn" onclick="resetCamera('neo-orig')">Reset</button>
+        <span class="hint">Drag · Scroll · Right-drag</span>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-neo-rig">
+      <div class="panel-header">
+        <div class="panel-title"><span class="icon">🦴</span> Neo — Predicted Rig</div>
+        <div class="panel-meta">21 joints · 1 313 pts</div>
+      </div>
+      <div class="canvas-wrap">
+        <div class="loading-overlay" id="lo-neo-rig"><div class="spinner"></div><span class="loading-text">Loading…</span></div>
+        <canvas id="c-neo-rig"></canvas>
+      </div>
+      <div class="controls-bar">
+        <button class="ctrl-btn active" onclick="toggleMesh('neo-rig',this)">Mesh</button>
+        <button class="ctrl-btn active" onclick="toggleSkeleton('neo-rig',this)">Skeleton</button>
+        <button class="ctrl-btn active" onclick="toggleWeights('neo-rig',this)">Weights</button>
+        <button class="ctrl-btn" onclick="resetCamera('neo-rig')">Reset</button>
+        <span class="hint">Drag · Scroll · Right-drag</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Three.js + addons -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader }    from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ─── Global registry ───────────────────────────────────────────────────────
+const viewers = {};        // id → { scene, camera, renderer, controls, ... }
+const JOINT_COLORS = [];   // per-joint hue
+
+function buildJointColors(n) {
+  const cols = [];
+  for (let i = 0; i < n; i++) {
+    const h = (i / n) * 300;  // red→purple, 300° of hue wheel
+    cols.push(new THREE.Color().setHSL(h / 360, 0.85, 0.55));
+  }
+  return cols;
+}
+
+// ─── Progress helper ───────────────────────────────────────────────────────
+let loadedCount = 0;
+const TOTAL_LOADS = 4;
+function tickProgress() {
+  loadedCount++;
+  document.getElementById('progress-bar').style.width =
+    (loadedCount / TOTAL_LOADS * 100) + '%';
+  if (loadedCount >= TOTAL_LOADS) {
+    setTimeout(() => {
+      document.getElementById('data-loading').style.display = 'none';
+    }, 300);
+  }
+}
+
+// ─── Create viewer ─────────────────────────────────────────────────────────
+function createViewer(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  const wrap   = canvas.parentElement;
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.1;
+  renderer.shadowMap.enabled = true;
+
+  const scene  = new THREE.Scene();
+  scene.background = new THREE.Color(0x0e0e14);
+
+  // Lighting
+  const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+  scene.add(ambient);
+  const dir1 = new THREE.DirectionalLight(0xffeedd, 1.2);
+  dir1.position.set(5, 8, 5);
+  scene.add(dir1);
+  const dir2 = new THREE.DirectionalLight(0xaaccff, 0.4);
+  dir2.position.set(-5, 2, -3);
+  scene.add(dir2);
+
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.001, 1000);
+  camera.position.set(0, 0, 3);
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.screenSpacePanning = true;
+
+  // Grid
+  const grid = new THREE.GridHelper(6, 20, 0x1a1a2a, 0x161620);
+  grid.position.y = -1.2;
+  scene.add(grid);
+
+  const v = { scene, camera, renderer, controls,
+               canvas, wrap,
+               wireframe: false,
+               meshGroup: null, skelGroup: null, weightsGroup: null,
+               defaultCamPos: null, defaultTarget: null };
+  viewers[canvasId.replace('c-', '')] = v;
+
+  // Resize observer
+  new ResizeObserver(() => resize(v)).observe(wrap);
+  resize(v);
+
+  return v;
+}
+
+function resize(v) {
+  const w = v.wrap.clientWidth, h = v.wrap.clientHeight;
+  if (!w || !h) return;
+  v.renderer.setSize(w, h, false);
+  v.camera.aspect = w / h;
+  v.camera.updateProjectionMatrix();
+}
+
+// ─── Animation loop ────────────────────────────────────────────────────────
+function animate() {
+  requestAnimationFrame(animate);
+  for (const v of Object.values(viewers)) {
+    v.controls.update();
+    v.renderer.render(v.scene, v.camera);
+  }
+}
+
+// ─── Load GLB from base64 ──────────────────────────────────────────────────
+function b64ToArrayBuffer(b64) {
+  const bin = atob(b64);
+  const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return buf.buffer;
+}
+
+function loadGLBFromB64(b64, viewer, options = {}) {
+  return new Promise((resolve, reject) => {
+    const loader = new GLTFLoader();
+    const buf = b64ToArrayBuffer(b64);
+    loader.parse(buf, '', gltf => {
+      const model = gltf.scene;
+      // Center + fit
+      const box = new THREE.Box3().setFromObject(model);
+      const cen = box.getCenter(new THREE.Vector3());
+      const siz = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(siz.x, siz.y, siz.z);
+      const scale = 2.0 / maxDim;
+      model.position.sub(cen.multiplyScalar(scale));
+      model.scale.setScalar(scale);
+
+      if (options.wireframe) {
+        model.traverse(c => {
+          if (c.isMesh) c.material.wireframe = true;
+        });
+      }
+
+      viewer.scene.add(model);
+      viewer.meshGroup = model;
+
+      // Fit camera
+      const box2 = new THREE.Box3().setFromObject(model);
+      const cen2 = box2.getCenter(new THREE.Vector3());
+      const siz2 = box2.getSize(new THREE.Vector3());
+      const dist = siz2.length() * 1.4;
+      viewer.camera.position.set(cen2.x, cen2.y + siz2.y * 0.2, cen2.z + dist);
+      viewer.controls.target.copy(cen2);
+      viewer.controls.update();
+
+      viewer.defaultCamPos   = viewer.camera.position.clone();
+      viewer.defaultTarget   = viewer.controls.target.clone();
+
+      resolve(model);
+    }, reject);
+  });
+}
+
+// ─── Build skeleton overlay ────────────────────────────────────────────────
+function buildSkeleton(joints, parents, jointColors) {
+  const group = new THREE.Group();
+
+  const sphereGeo = new THREE.SphereGeometry(0.018, 10, 8);
+
+  joints.forEach((j, i) => {
+    const mat = new THREE.MeshStandardMaterial({
+      color: jointColors[i],
+      emissive: jointColors[i],
+      emissiveIntensity: 0.3,
+      roughness: 0.3,
+      metalness: 0.1,
+    });
+    const sphere = new THREE.Mesh(sphereGeo, mat);
+    sphere.position.set(j[0], j[1], j[2]);
+    group.add(sphere);
+
+    // Bone line to parent
+    const p = parents[i];
+    if (i > 0 && p !== i) {
+      const start = new THREE.Vector3(...joints[p]);
+      const end   = new THREE.Vector3(...joints[i]);
+      const dir   = end.clone().sub(start);
+      const len   = dir.length();
+      if (len < 1e-6) return;
+
+      const boneGeo = new THREE.CylinderGeometry(0.006, 0.010, len, 6);
+      boneGeo.translate(0, len / 2, 0);
+      boneGeo.applyMatrix4(
+        new THREE.Matrix4().makeRotationFromQuaternion(
+          new THREE.Quaternion().setFromUnitVectors(
+            new THREE.Vector3(0, 1, 0),
+            dir.clone().normalize()
+          )
+        )
+      );
+
+      const blended = jointColors[p].clone().lerp(jointColors[i], 0.5);
+      const boneMat = new THREE.MeshStandardMaterial({
+        color: blended,
+        emissive: blended,
+        emissiveIntensity: 0.15,
+        roughness: 0.5,
+        transparent: true,
+        opacity: 0.85,
+      });
+      const boneMesh = new THREE.Mesh(boneGeo, boneMat);
+      boneMesh.position.copy(start);
+      group.add(boneMesh);
+    }
+  });
+
+  return group;
+}
+
+// ─── Build skinning-weight point cloud ────────────────────────────────────
+function buildWeightCloud(pointcloud, dominant, jointColors) {
+  const n = pointcloud.length;
+  const positions = new Float32Array(n * 3);
+  const colors    = new Float32Array(n * 3);
+
+  for (let i = 0; i < n; i++) {
+    positions[i*3]   = pointcloud[i][0];
+    positions[i*3+1] = pointcloud[i][1];
+    positions[i*3+2] = pointcloud[i][2];
+    const c = jointColors[dominant[i]];
+    colors[i*3]   = c.r;
+    colors[i*3+1] = c.g;
+    colors[i*3+2] = c.b;
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('color',    new THREE.BufferAttribute(colors, 3));
+
+  const mat = new THREE.PointsMaterial({
+    size: 0.018,
+    vertexColors: true,
+    sizeAttenuation: true,
+    transparent: true,
+    opacity: 0.75,
+  });
+
+  return new THREE.Points(geo, mat);
+}
+
+// ─── Load rig panel ────────────────────────────────────────────────────────
+async function loadRigPanel(canvasId, b64, modelData) {
+  const v = createViewer(canvasId);
+  const id = canvasId.replace('c-', '');
+  const lo = document.getElementById('lo-' + id);
+
+  const jColors = buildJointColors(modelData.num_joints);
+
+  // Simplified mesh (slightly transparent)
+  const model = await loadGLBFromB64(b64, v);
+  model.traverse(c => {
+    if (c.isMesh) {
+      c.material.transparent = true;
+      c.material.opacity = 0.45;
+      c.material.depthWrite = false;
+      c.material.side = THREE.DoubleSide;
+    }
+  });
+
+  // Fit to mesh bounds and translate skeleton to match
+  const box = new THREE.Box3().setFromObject(model);
+  const cen = box.getCenter(new THREE.Vector3());
+  const siz = box.getSize(new THREE.Vector3());
+  const scale = 2.0 / Math.max(siz.x, siz.y, siz.z);
+
+  // Transform joints to match scaled model
+  // Model was centered and scaled: pos = (origPos - center) * scale
+  // We need the original mesh center BEFORE any model transforms.
+  // Actually loadGLBFromB64 scales by 2/maxDim and translates by -center*scale.
+  // The npz joints are in the same coordinate space as the simplified mesh before those transforms.
+  // So we apply the same transform to joints.
+
+  // Get original bbox before our scale/translate applied in loadGLBFromB64
+  // We need to recompute from the GLB's raw scene
+  // Instead, let's compute the inverse of what we did:
+  //   model.position = -center*scale, model.scale = scale
+  //   => world_joint = joint * scale + model.position
+  //                  = joint * scale - center * scale
+  //                  = (joint - center) * scale  ... but center was pre-scale
+  // Actually we computed box BEFORE applying scale/translate, then:
+  //   scale = 2/maxDim
+  //   model.position.sub(cen * scale)   => model.position = -cen * scale
+  //   model.scale = scale
+  // So joint_world = joint * scale + model.position
+  //               = joint * scale - cen * scale
+  //               = (joint - cen) * scale
+
+  // Extract the actual transform from the model
+  const modelScale = model.scale.x;
+  const modelPos   = model.position.clone();
+
+  // Re-compute the original bounding box center from the model's stored transforms:
+  // model.position = -cen_orig * scale  =>  cen_orig = -model.position / scale
+  const cenOrig = modelPos.clone().divideScalar(-modelScale);
+
+  function transformJoint(j) {
+    return new THREE.Vector3(
+      (j[0] - cenOrig.x) * modelScale,
+      (j[1] - cenOrig.y) * modelScale,
+      (j[2] - cenOrig.z) * modelScale,
+    );
+  }
+
+  // Transform all joints
+  const transformedJoints = modelData.joints.map(j => {
+    const v3 = transformJoint(j);
+    return [v3.x, v3.y, v3.z];
+  });
+
+  // Transform point cloud
+  const transformedPC = modelData.pointcloud.map(p => {
+    const v3 = transformJoint(p);
+    return [v3.x, v3.y, v3.z];
+  });
+
+  // Build skeleton
+  const skelGroup = buildSkeleton(transformedJoints, modelData.parents, jColors);
+  v.scene.add(skelGroup);
+  v.skelGroup = skelGroup;
+
+  // Build weight cloud
+  const weightCloud = buildWeightCloud(transformedPC, modelData.dominant, jColors);
+  v.scene.add(weightCloud);
+  v.weightsGroup = weightCloud;
+
+  // Hide loading
+  lo.classList.add('hidden');
+  setTimeout(() => lo.remove(), 500);
+}
+
+// ─── Load original panel ───────────────────────────────────────────────────
+async function loadOrigPanel(canvasId, b64) {
+  const v = createViewer(canvasId);
+  const id = canvasId.replace('c-', '');
+  const lo = document.getElementById('lo-' + id);
+
+  await loadGLBFromB64(b64, v);
+
+  lo.classList.add('hidden');
+  setTimeout(() => lo.remove(), 500);
+}
+
+// ─── Controls ──────────────────────────────────────────────────────────────
+window.toggleWireframe = function(id, btn) {
+  const v = viewers[id];
+  if (!v || !v.meshGroup) return;
+  v.wireframe = !v.wireframe;
+  v.meshGroup.traverse(c => {
+    if (c.isMesh) c.material.wireframe = v.wireframe;
+  });
+  btn.textContent = v.wireframe ? 'Wireframe' : 'Solid';
+  btn.classList.toggle('active', !v.wireframe);
+};
+
+window.toggleMesh = function(id, btn) {
+  const v = viewers[id];
+  if (!v || !v.meshGroup) return;
+  const vis = !v.meshGroup.visible;
+  v.meshGroup.visible = vis;
+  btn.classList.toggle('active', vis);
+};
+
+window.toggleSkeleton = function(id, btn) {
+  const v = viewers[id];
+  if (!v || !v.skelGroup) return;
+  const vis = !v.skelGroup.visible;
+  v.skelGroup.visible = vis;
+  btn.classList.toggle('active', vis);
+};
+
+window.toggleWeights = function(id, btn) {
+  const v = viewers[id];
+  if (!v || !v.weightsGroup) return;
+  const vis = !v.weightsGroup.visible;
+  v.weightsGroup.visible = vis;
+  btn.classList.toggle('active', vis);
+};
+
+window.resetCamera = function(id) {
+  const v = viewers[id];
+  if (!v || !v.defaultCamPos) return;
+  v.camera.position.copy(v.defaultCamPos);
+  v.controls.target.copy(v.defaultTarget);
+  v.controls.update();
+};
+
+// ─── Main ──────────────────────────────────────────────────────────────────
+async function main() {
+  const bar = document.getElementById('progress-bar');
+
+  bar.style.width = '5%';
+  const resp = await fetch('viewer_data.json');
+  bar.style.width = '20%';
+  const data = await resp.json();
+  bar.style.width = '40%';
+
+  // Fire all four panels in parallel
+  const tasks = [
+    loadOrigPanel('c-spyro-orig', data.spyro_original_b64).then(() => { bar.style.width = (40 + 15) + '%'; }),
+    loadRigPanel ('c-spyro-rig',  data.spyro_simp_b64,  data.spyro_the_dragon).then(() => { bar.style.width = (40 + 30) + '%'; }),
+    loadOrigPanel('c-neo-orig',   data.neo_original_b64).then(() => { bar.style.width = (40 + 45) + '%'; }),
+    loadRigPanel ('c-neo-rig',    data.neo_simp_b64,    data.neo_crispytyph).then(() => { bar.style.width = (40 + 60) + '%'; }),
+  ];
+
+  await Promise.all(tasks);
+
+  bar.style.width = '100%';
+  setTimeout(() => {
+    document.getElementById('data-loading').style.opacity = '0';
+    document.getElementById('data-loading').style.transition = 'opacity 0.4s';
+    setTimeout(() => { document.getElementById('data-loading').style.display = 'none'; }, 400);
+  }, 200);
+
+  animate();
+}
+
+main().catch(console.error);
+</script>
+</body>
+</html>
