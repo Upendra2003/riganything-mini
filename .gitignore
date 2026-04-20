@@ -6,3 +6,6 @@ Dataset.zip
 pointClouds
 checkpoints
 logs
+tokens/obj_remesh
+tokens/obj_remesh.zip
+tokens
