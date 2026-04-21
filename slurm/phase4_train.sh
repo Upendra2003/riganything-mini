@@ -1,12 +1,14 @@
 #!/bin/bash
 #SBATCH --job-name=riganything_phase4
-#SBATCH --partition=workq
+#SBATCH --partition=longq
+#SBATCH --qos=longq
+#SBATCH --account=student
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16
-#SBATCH --mem=64G
-#SBATCH --gres=gpu:l40:1
-#SBATCH --time=240:00:00
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=40G
+#SBATCH --gres=gpu:1
+#SBATCH --time=24:00:00
 #SBATCH --output=logs/phase4_%j.out
 #SBATCH --error=logs/phase4_%j.err
 

@@ -144,13 +144,17 @@ sbatch slurm/phase4_train.sh
 
 ---
 
-## Phase 5 — Connectivity Prediction 🔜
-**Role:** Given predicted j_k, classify which of the k-1 previous joints is its parent (teacher forcing during training).
+## Phase 5 — Connectivity Prediction ✅
+**Files:** `phase5/`
+**Input:** frozen Z_k from Phase 3 + ground-truth j_k (teacher forcing) + pre-tokenized T
+**Output:** parent index p_k — runtime only
+**Checkpoint:** `checkpoints/phase5/best_model.pt` (~8.4 MB)
 
 **Fusing module** — incorporate j_k into the context:
 ```
 Z'_k = MLP(concat(Z_k.mean(0), j_k, γ(k)))    [2d+3 → d]
 MLP: Linear(2d+3, 2048) → ReLU → Linear(2048, d)
+FusingModule parameters (d=1024): ≈6.3M
 ```
 
 **Connectivity module** — score each candidate parent:
@@ -158,6 +162,8 @@ MLP: Linear(2d+3, 2048) → ReLU → Linear(2048, d)
 score_i = MLP(concat(Z'_k, T_i))    [2d → 1],   i in 1..k-1
 q_k     = Softmax([score_1, …, score_{k-1}])
 MLP: Linear(2d, 1024) → ReLU → Linear(1024, 1)
+ConnectivityModule parameters (d=1024): ≈2.1M
+Total trainable Phase 5 parameters: ≈8.4M
 ```
 
 **Loss** (BCE, teacher forced, one true parent per step):
@@ -167,46 +173,100 @@ L_connect = −∑_{i<k} [ ŷ_{k,i}·log(q_{k,i}) + (1−ŷ_{k,i})·log(1−q_{k
 
 **Output:** parent index p_k — runtime only. Target accuracy: >90% (paper: 96.5%).
 
+Phase 3 transformer is fully frozen during Phase 5 training (`eval()` + `requires_grad_(False)`).
+
+```bash
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True .venv/bin/python phase5/train.py --epochs 30
+.venv/bin/python tests/phase5_test.py
+.venv/bin/python phase5/inference.py --shape_id <id>
+# Resume:
+.venv/bin/python phase5/train.py --resume checkpoints/phase5/best_model.pt
+```
+
 ---
 
-## Phase 6 — Skinning Prediction 🔜
-**Role:** Compute W `[L, K]` skinning weight matrix for LBS deformation.
+## Phase 6 — Skinning Prediction ✅
+**Files:** `phase6/`
+**Input:** pre-tokenized H [1024, d] + T [K, d] from `tokens/obj_remesh/` — no Phase 3 transformer needed
+**Output:** `output/pred_skins/<id>_weights.npy` — `[1024, K]` float32
+**Checkpoint:** `checkpoints/phase6/best_model.pt` (~8 MB)
 
 **SkinningModule** — pairwise MLP over shape × skeleton tokens:
 ```
 pairs  = concat(H.unsqueeze(1).expand(L,K,d), T.unsqueeze(0).expand(L,K,d))  [L,K,2d]
 W      = Softmax(MLP(pairs).squeeze(-1), dim=-1)    [L,K],  rows sum to 1
 MLP: Linear(2d, 1024) → ReLU → Linear(1024, 1)
+SkinningModule parameters (d=1024): ≈2.1M
 ```
+
+**Skinning alignment** (`_skinning.npy` [V, K] → [L=1024, K]):
+  V ≥ L: take first L rows (vertex ordering is spatially coherent)
+  V < L: tile rows to reach L, then truncate; renormalise rows to sum to 1
 
 **Loss** (weighted cross-entropy — gt weights are both target and per-class weight):
 ```
-L_skinning = (1/L) ∑_l ∑_k [ −ŵ_{l,k} · log(w_{l,k}) ]
+L_skinning = (1/L) ∑_l ∑_k [ −ŵ_{l,k} · log(w_{l,k} + 1e-8) ]
 ```
 
-**Output:** `output/pred_skins/<id>_weights.npy` — `[1024, K]` float32.
 Normals in H are critical: points geodesically far but Euclidean-close (e.g., inner/outer thigh) get different weights via orientation cue.
+Gradient accumulation over 4 shapes → effective batch size 4 with variable K.
+
+```bash
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True .venv/bin/python phase6/train.py --epochs 30
+.venv/bin/python tests/phase6_test.py
+.venv/bin/python phase6/inference.py --shape_id <id>
+# Resume:
+.venv/bin/python phase6/train.py --resume checkpoints/phase6/best_model.pt
+```
 
 ---
 
-## Phase 7 — End-to-End Training 🔜
-**Role:** Joint training of all modules (Phases 2–6) with combined loss + online pose augmentation.
+## Phase 7 — End-to-End Training ✅
+**Files:** `phase7/`
+**Input:** `pointClouds/obj_remesh/` — raw pointcloud + skeleton + skinning
+**Output:** `output/phase7/<id>_{joints,parents,weights}.npy`
+**Checkpoint:** `checkpoints/phase7/best_model.pt`
 
+**RigAnythingModel** — all 7 submodules jointly trained:
 ```
-L = L_joint + L_connect + L_skinning   (equally weighted)
+ShapeTokenizer + SkeletonTokenizer + HybridTransformer
++ DenoisingMLP + FusingModule + ConnectivityModule + SkinningModule
+```
+
+**Combined loss** (equally weighted):
+```
+L = L_joint + L_connect + L_skinning
 ```
 
 **Online pose augmentation** (every step, forces pose generalization):
 ```
-For each joint k: random rotation R_k, |angle| ≤ 45°
-p'_l = ∑_k w_{l,k} · (R_k · (p_l − j_k) + j'_k)
+For each joint k: random rotation R_k, |angle| ≤ 45° (Rodrigues formula)
+forward_kinematics → new joint positions + global rotations
+p'_l = ∑_k w_{l,k} · (R_k · (p_l − j_k) + j'_k)   [full LBS]
+normals recomputed from deformed points via KNN cross-product
 ```
 
-**Full model class:** `RigAnythingModel` — ShapeTokenizer + SkeletonTokenizer + HybridTransformer + DenoisingMLP + FusingModule + ConnectivityModule + SkinningModule.
-Phase 2 tokenizers are trained jointly here (random-init in Phases 2–3 standalone).
+**Memory strategy:**
+- T_prev detached each step → bounds per-step graph size
+- T_all recomputed without detach after loop → gradients flow through SkeletonTokenizer via skinning loss
+- PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True recommended
 
-**Hardware:** Single L40 GPU, batch_size=2 → 28–38 GB VRAM.
-**Checkpoint:** `checkpoints/riganything/epoch_N.pt`
+**Tokenizer note:** ShapeTokenizer and SkeletonTokenizer accept `d` parameter (default 1024). All existing Phase 2 code is backward-compatible.
+
+**Warm-start:** Phase3→transformer, Phase4→denoiser, Phase5→fuser+connector, Phase6→skinner (strict=False; missing checkpoints skipped with warning).
+
+**Hardware:** Single L40 GPU, batch_size=1 (K varies per shape).
+**Checkpoint:** `checkpoints/phase7/best_model.pt`
+
+```bash
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True .venv/bin/python phase7/train.py --epochs 50
+.venv/bin/python tests/phase7_test.py
+.venv/bin/python phase7/inference.py --shape_id <id>
+# Resume:
+.venv/bin/python phase7/train.py --resume checkpoints/phase7/best_model.pt
+# Cluster (SLURM):
+sbatch slurm/phase7_train.sh
+```
 
 ---
 
@@ -255,3 +315,7 @@ Dataset/obj_remesh/*.obj
 | `checkpoints/phase3/best_model.pt` | 1.7 GB | HybridTransformer (epoch 4, val_loss=0.000945) |
 | `checkpoints/phase4/best_model.pt` | ~40 MB | DenoisingMLP (best val loss) |
 | `checkpoints/phase4/epoch_N.pt` | ~40 MB | Periodic checkpoint every 5 epochs |
+| `checkpoints/phase5/best_model.pt` | ~34 MB | FusingModule + ConnectivityModule (best val loss) |
+| `checkpoints/phase5/epoch_N.pt` | ~34 MB | Periodic checkpoint every 5 epochs |
+| `checkpoints/phase6/best_model.pt` | ~8 MB | SkinningModule (best val loss) |
+| `checkpoints/phase6/epoch_N.pt` | ~8 MB | Periodic checkpoint every 5 epochs |

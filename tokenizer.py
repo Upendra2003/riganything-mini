@@ -56,14 +56,14 @@ class ShapeTokenizer(nn.Module):
     """
     Point-wise MLP — no interaction between points.
     Input:  [N, 6]   (xyz + normals)
-    Output: [N, 1024]
+    Output: [N, d]
     """
-    def __init__(self):
+    def __init__(self, d: int = 1024):
         super().__init__()
         self.mlp = nn.Sequential(
-            nn.Linear(6, 512),
+            nn.Linear(6, d // 2),
             nn.ReLU(),
-            nn.Linear(512, 1024),
+            nn.Linear(d // 2, d),
         )
         # Zero biases so that weight×input differences dominate the output.
         # With default kaiming init the bias term otherwise dominates the mean
@@ -73,7 +73,6 @@ class ShapeTokenizer(nn.Module):
                 nn.init.zeros_(m.bias)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x: [N, 6] → [N, 1024]
         return self.mlp(x)
 
 
@@ -83,44 +82,45 @@ class SkeletonTokenizer(nn.Module):
     Per-joint encoding using current joint, parent joint, and
     sinusoidal positional embeddings.
     Input:  positions [K, 3], parent_indices [K] (0-indexed)
-    Output: [K, 1024]
+    Output: [K, d]
     """
-    def __init__(self):
+    def __init__(self, d: int = 1024):
         super().__init__()
+        self.d = d
         self.joint_mlp = nn.Sequential(
-            nn.Linear(3, 512),
+            nn.Linear(3, d // 2),
             nn.ReLU(),
-            nn.Linear(512, 1024),
+            nn.Linear(d // 2, d),
         )
         self.combiner_mlp = nn.Sequential(
-            nn.Linear(4096, 2048),
+            nn.Linear(4 * d, 2 * d),
             nn.ReLU(),
-            nn.Linear(2048, 1024),
+            nn.Linear(2 * d, d),
         )
 
     def forward(self, positions: torch.Tensor, parent_indices: torch.Tensor) -> torch.Tensor:
         """
         positions:      [K, 3]
         parent_indices: [K]  (0-indexed; root's parent_index == 0)
-        Returns:        [K, 1024]
+        Returns:        [K, d]
         """
         K = positions.shape[0]
 
         # Encode all joint positions and parent positions via joint_mlp
-        jk_feat  = self.joint_mlp(positions)                    # [K, 1024]
-        jpk_feat = self.joint_mlp(positions[parent_indices])    # [K, 1024]
+        jk_feat  = self.joint_mlp(positions)                    # [K, d]
+        jpk_feat = self.joint_mlp(positions[parent_indices])    # [K, d]
 
         # Sinusoidal embeddings for each joint index and its parent index
         # k is 0-indexed here (same as array index)
-        gamma_k  = torch.stack([sinusoidal_embedding(k)  for k in range(K)])              # [K, 1024]
-        gamma_pk = torch.stack([sinusoidal_embedding(int(parent_indices[k].item()))
-                                for k in range(K)])                                        # [K, 1024]
+        gamma_k  = torch.stack([sinusoidal_embedding(k, self.d)  for k in range(K)])
+        gamma_pk = torch.stack([sinusoidal_embedding(int(parent_indices[k].item()), self.d)
+                                for k in range(K)])
 
         gamma_k  = gamma_k.to(positions.device)
         gamma_pk = gamma_pk.to(positions.device)
 
-        combined = torch.cat([jk_feat, gamma_k, jpk_feat, gamma_pk], dim=-1)  # [K, 4096]
-        return self.combiner_mlp(combined)                                     # [K, 1024]
+        combined = torch.cat([jk_feat, gamma_k, jpk_feat, gamma_pk], dim=-1)  # [K, 4*d]
+        return self.combiner_mlp(combined)                                     # [K, d]
 
 
 # ── I/O helpers ────────────────────────────────────────────────

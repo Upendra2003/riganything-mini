@@ -210,6 +210,36 @@
   .legend-swatch {
     width: 10px; height: 10px; border-radius: 2px;
   }
+
+  .section-heading {
+    padding: 14px 16px 4px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-heading h2 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #ff6b35;
+  }
+  .section-heading .section-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, #ff6b3540, transparent);
+  }
+  .section-badge {
+    background: #2a1a0a;
+    border: 1px solid #ff6b3560;
+    color: #ff6b35;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
 </style>
 </head>
 <body>
@@ -312,6 +342,96 @@
 
 </div>
 
+<!-- ── Our Model Results ────────────────────────────────────────────────── -->
+<div class="section-heading">
+  <h2>Our Model Results</h2>
+  <span class="section-badge">Phase 7 · End-to-End</span>
+  <div class="section-line"></div>
+</div>
+
+<div class="col-labels">
+  <div class="col-label original"><span class="dot"></span> Original Model</div>
+  <div class="col-label predicted"><span class="dot"></span> Predicted Skeleton</div>
+</div>
+
+<div class="grid">
+
+  <!-- Row 1: Spyro — our prediction -->
+  <div class="row">
+    <div class="panel" id="panel-spyro-pred-orig">
+      <div class="panel-header">
+        <div class="panel-title"><span class="icon">🐉</span> Spyro the Dragon</div>
+        <div class="panel-meta">Original · GLB · textured</div>
+      </div>
+      <div class="canvas-wrap">
+        <div class="loading-overlay" id="lo-spyro-pred-orig"><div class="spinner"></div><span class="loading-text">Loading…</span></div>
+        <canvas id="c-spyro-pred-orig"></canvas>
+      </div>
+      <div class="controls-bar">
+        <button class="ctrl-btn active" onclick="toggleWireframe('spyro-pred-orig',this)">Solid</button>
+        <button class="ctrl-btn" onclick="resetCamera('spyro-pred-orig')">Reset</button>
+        <span class="hint">Drag · Scroll · Right-drag</span>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-spyro-pred-rig">
+      <div class="panel-header">
+        <div class="panel-title"><span class="icon">🦴</span> Spyro — Our Predicted Rig</div>
+        <div class="panel-meta" id="meta-spyro-pred">Predicting…</div>
+      </div>
+      <div class="canvas-wrap">
+        <div class="loading-overlay" id="lo-spyro-pred-rig"><div class="spinner"></div><span class="loading-text">Loading…</span></div>
+        <canvas id="c-spyro-pred-rig"></canvas>
+      </div>
+      <div class="controls-bar">
+        <button class="ctrl-btn active" onclick="toggleMesh('spyro-pred-rig',this)">Mesh</button>
+        <button class="ctrl-btn active" onclick="toggleSkeleton('spyro-pred-rig',this)">Skeleton</button>
+        <button class="ctrl-btn active" onclick="toggleWeights('spyro-pred-rig',this)">Weights</button>
+        <button class="ctrl-btn" onclick="resetCamera('spyro-pred-rig')">Reset</button>
+        <span class="hint">Drag · Scroll · Right-drag</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Neo — our prediction -->
+  <div class="row">
+    <div class="panel" id="panel-neo-pred-orig">
+      <div class="panel-header">
+        <div class="panel-title"><span class="icon">🤖</span> Neo Crispytyph</div>
+        <div class="panel-meta">Original · GLB · textured</div>
+      </div>
+      <div class="canvas-wrap">
+        <div class="loading-overlay" id="lo-neo-pred-orig"><div class="spinner"></div><span class="loading-text">Loading…</span></div>
+        <canvas id="c-neo-pred-orig"></canvas>
+      </div>
+      <div class="controls-bar">
+        <button class="ctrl-btn active" onclick="toggleWireframe('neo-pred-orig',this)">Solid</button>
+        <button class="ctrl-btn" onclick="resetCamera('neo-pred-orig')">Reset</button>
+        <span class="hint">Drag · Scroll · Right-drag</span>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-neo-pred-rig">
+      <div class="panel-header">
+        <div class="panel-title"><span class="icon">🦴</span> Neo — Our Predicted Rig</div>
+        <div class="panel-meta" id="meta-neo-pred">Predicting…</div>
+      </div>
+      <div class="canvas-wrap">
+        <div class="loading-overlay" id="lo-neo-pred-rig"><div class="spinner"></div><span class="loading-text">Loading…</span></div>
+        <canvas id="c-neo-pred-rig"></canvas>
+      </div>
+      <div class="controls-bar">
+        <button class="ctrl-btn active" onclick="toggleMesh('neo-pred-rig',this)">Mesh</button>
+        <button class="ctrl-btn active" onclick="toggleSkeleton('neo-pred-rig',this)">Skeleton</button>
+        <button class="ctrl-btn active" onclick="toggleWeights('neo-pred-rig',this)">Weights</button>
+        <button class="ctrl-btn" onclick="resetCamera('neo-pred-rig')">Reset</button>
+        <span class="hint">Drag · Scroll · Right-drag</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
 <!-- Three.js + addons -->
 <script type="importmap">
 {
@@ -342,7 +462,7 @@ function buildJointColors(n) {
 
 // ─── Progress helper ───────────────────────────────────────────────────────
 let loadedCount = 0;
-const TOTAL_LOADS = 4;
+const TOTAL_LOADS = 8;
 function tickProgress() {
   loadedCount++;
   document.getElementById('progress-bar').style.width =
@@ -560,7 +680,7 @@ function buildWeightCloud(pointcloud, dominant, jointColors) {
 }
 
 // ─── Load rig panel ────────────────────────────────────────────────────────
-async function loadRigPanel(canvasId, b64, modelData) {
+async function loadRigPanel(canvasId, b64, modelData, onReady) {
   const v = createViewer(canvasId);
   const id = canvasId.replace('c-', '');
   const lo = document.getElementById('lo-' + id);
@@ -645,6 +765,7 @@ async function loadRigPanel(canvasId, b64, modelData) {
   v.weightsGroup = weightCloud;
 
   // Hide loading
+  if (onReady) onReady();
   lo.classList.add('hidden');
   setTimeout(() => lo.remove(), 500);
 }
@@ -715,12 +836,26 @@ async function main() {
   const data = await resp.json();
   bar.style.width = '40%';
 
-  // Fire all four panels in parallel
+  // Fire all eight panels in parallel
   const tasks = [
-    loadOrigPanel('c-spyro-orig', data.spyro_original_b64).then(() => { bar.style.width = (40 + 15) + '%'; }),
-    loadRigPanel ('c-spyro-rig',  data.spyro_simp_b64,  data.spyro_the_dragon).then(() => { bar.style.width = (40 + 30) + '%'; }),
-    loadOrigPanel('c-neo-orig',   data.neo_original_b64).then(() => { bar.style.width = (40 + 45) + '%'; }),
-    loadRigPanel ('c-neo-rig',    data.neo_simp_b64,    data.neo_crispytyph).then(() => { bar.style.width = (40 + 60) + '%'; }),
+    loadOrigPanel('c-spyro-orig',      data.spyro_original_b64).then(() => { bar.style.width = '50%'; }),
+    loadRigPanel ('c-spyro-rig',       data.spyro_simp_b64,  data.spyro_the_dragon).then(() => { bar.style.width = '57%'; }),
+    loadOrigPanel('c-neo-orig',        data.neo_original_b64).then(() => { bar.style.width = '64%'; }),
+    loadRigPanel ('c-neo-rig',         data.neo_simp_b64,    data.neo_crispytyph).then(() => { bar.style.width = '71%'; }),
+    loadOrigPanel('c-spyro-pred-orig', data.spyro_original_b64).then(() => { bar.style.width = '78%'; }),
+    loadRigPanel ('c-spyro-pred-rig',  data.spyro_simp_b64,  data.spyro_the_dragon_pred,
+      () => {
+        const m = data.spyro_the_dragon_pred;
+        document.getElementById('meta-spyro-pred').textContent =
+          `${m.num_joints} joints · 1 024 pts · Phase 7`;
+      }).then(() => { bar.style.width = '85%'; }),
+    loadOrigPanel('c-neo-pred-orig',   data.neo_original_b64).then(() => { bar.style.width = '92%'; }),
+    loadRigPanel ('c-neo-pred-rig',    data.neo_simp_b64,    data.neo_crispytyph_pred,
+      () => {
+        const m = data.neo_crispytyph_pred;
+        document.getElementById('meta-neo-pred').textContent =
+          `${m.num_joints} joints · 1 024 pts · Phase 7`;
+      }).then(() => { bar.style.width = '99%'; }),
   ];
 
   await Promise.all(tasks);

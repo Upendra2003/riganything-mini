@@ -35,7 +35,7 @@ parser.add_argument("--split",       default="all",
                     choices=["train", "val", "test", "all"])
 parser.add_argument("--resume",      action="store_true",
                     help="Skip shapes that already have a saved pointcloud.npy")
-args = parser.parse_args()
+args, _ = parser.parse_known_args()
 
 # ── ANSI colours ───────────────────────────────────────────────
 G="\033[92m"; Y="\033[93m"; R="\033[91m"
