@@ -1,6 +1,6 @@
 <img width="908" height="552" alt="intro" src="https://github.com/user-attachments/assets/dbd52c64-c73e-440a-a622-9a2001dc6826" />
 
-Inference Results HTML View: [Here](https://riganything-mini-inference.netlify.app/) 
+Inference Results HTML View: [Here](https://upendra2003.github.io/riganything-mini/) 
 
 Based on the [RigNet dataset](https://github.com/zhan-xu/RigNet) (2703 preprocessed 3D character models with ground-truth rigs).
 
@@ -13,9 +13,9 @@ Based on the [RigNet dataset](https://github.com/zhan-xu/RigNet) (2703 preproces
 | **1** | Point Cloud Dataset Generation | [docs/phase_1.md](docs/phase_1.md) |
 | **2** | Shape & Skeleton Tokenizers | [docs/phase_2.md](docs/phase_2.md) |
 | **3** | Hybrid Attention Transformer | [docs/phase_3.md](docs/phase_3.md) |
-| **4** | Joint Diffusion Module **(Inprogress)** | [docs/phase_4.md](docs/phase_4.md)] |
-| 5 | Connectivity Prediction | Not started |
-| 6 | Skinnign Weight Prediction | Not started |
+| **4** | Joint Diffusion Module | [docs/phase_4.md](docs/phase_4.md) |
+| 5 | Connectivity Prediction | [docs/phase_5.md](docs/phase_5.md) |
+| 6 | Skinnign Weight Prediction | [docs/phase_6.md](docs/phase_6.md) |
 | 7 | End-to-End Training | Not started |
 | 8 | Evaluation and Metrics | Not started |
 
