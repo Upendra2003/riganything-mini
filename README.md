@@ -1,6 +1,6 @@
 <img width="908" height="552" alt="intro" src="https://github.com/user-attachments/assets/dbd52c64-c73e-440a-a622-9a2001dc6826" />
 
-Inference Results HTML View: [Here](https://riganything-mini-inference.netlify.app/) 
+Inference Results HTML View: [Here](https://upendra2003.github.io/riganything-mini/) 
 
 Based on the [RigNet dataset](https://github.com/zhan-xu/RigNet) (2703 preprocessed 3D character models with ground-truth rigs).
 
