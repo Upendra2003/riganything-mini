@@ -15,7 +15,7 @@ Based on the [RigNet dataset](https://github.com/zhan-xu/RigNet) (2703 preproces
 | **3** | Hybrid Attention Transformer | [docs/phase_3.md](docs/phase_3.md) |
 | **4** | Joint Diffusion Module | [docs/phase_4.md](docs/phase_4.md) |
 | 5 | Connectivity Prediction | [docs/phase_5.md](docs/phase_5.md) |
-| 6 | Skinnign Weight Prediction | Not started |
+| 6 | Skinnign Weight Prediction | [docs/phase_6.md](docs/phase_6.md) |
 | 7 | End-to-End Training | Not started |
 | 8 | Evaluation and Metrics | Not started |
 
