@@ -51,6 +51,9 @@ from phase5.connectivity    import FusingModule, ConnectivityModule, connectivit
 from phase6.model           import SkinningModule, skinning_loss
 
 
+_p3_defaults = Phase3Config()
+
+
 class RigAnythingModel(nn.Module):
     """
     Full rigging model.  All submodules are jointly optimised (none frozen).
@@ -58,7 +61,7 @@ class RigAnythingModel(nn.Module):
     Args:
         d        : token / feature dimension (must be 1024 everywhere)
         L        : number of shape tokens (= 1024 sampled surface points)
-        n_layers : transformer depth
+        n_layers : transformer depth — defaults to phase3/config.py n_layers
         n_heads  : attention heads
         ffn_dim  : transformer FFN hidden dim
         M        : diffusion timesteps
@@ -66,11 +69,11 @@ class RigAnythingModel(nn.Module):
 
     def __init__(
         self,
-        d:        int = 1024,
-        L:        int = 1024,
-        n_layers: int = 2,
-        n_heads:  int = 16,
-        ffn_dim:  int = 4096,
+        d:        int = _p3_defaults.d,
+        L:        int = _p3_defaults.L,
+        n_layers: int = _p3_defaults.n_layers,
+        n_heads:  int = _p3_defaults.n_heads,
+        ffn_dim:  int = _p3_defaults.ffn_dim,
         M:        int = 1000,
     ):
         super().__init__()

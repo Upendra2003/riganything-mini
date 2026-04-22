@@ -38,10 +38,10 @@ python -c "import torch; assert torch.cuda.is_available(), 'CUDA not available â
 CKPT="checkpoints/phase7/best_model.pt"
 if [ -f "$CKPT" ]; then
     echo "Resuming from $CKPT"
-    python phase7/train.py --epochs 50 --max_shapes 200 --resume "$CKPT"
+    python phase7/train.py --epochs 200 --max_shapes 1000 --resume "$CKPT"
 else
     echo "Starting fresh (no checkpoint found at $CKPT)"
-    python phase7/train.py --epochs 50 --max_shapes 200
+    python phase7/train.py --epochs 200 --max_shapes 1000
 fi
 
 echo "======================================================"

@@ -30,6 +30,7 @@ import argparse
 
 import numpy as np
 import torch
+import torch.cuda.amp as amp
 from torch.nn.utils import clip_grad_norm_
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -118,6 +119,7 @@ def save_checkpoint(
     model: RigAnythingModel,
     optimizer,
     scheduler,
+    scaler,
     val_loss: float,
 ) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -127,6 +129,7 @@ def save_checkpoint(
         'model_state_dict':     model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
         'scheduler_state_dict': scheduler.state_dict(),
+        'scaler_state_dict':    scaler.state_dict(),
     }, path)
 
 
@@ -137,6 +140,7 @@ def train_epoch(
     model:       RigAnythingModel,
     loader,
     optimizer,
+    scaler:      amp.GradScaler,
     device:      torch.device,
     epoch:       int,
     use_augment: bool,
@@ -165,12 +169,23 @@ def train_epoch(
             except Exception as e:
                 pass  # fall back to un-augmented on rare numerical issues
 
-        total, lj, lc, ls = model(points, normals, gt_joints, gt_parents, gt_skin)
+        try:
+            with amp.autocast(dtype=torch.bfloat16):
+                total, lj, lc, ls = model(points, normals, gt_joints, gt_parents, gt_skin)
 
-        optimizer.zero_grad()
-        total.backward()
-        clip_grad_norm_(model.parameters(), max_norm=1.0)
-        optimizer.step()
+            optimizer.zero_grad()
+            scaler.scale(total).backward()
+            scaler.unscale_(optimizer)
+            clip_grad_norm_(model.parameters(), max_norm=1.0)
+            scaler.step(optimizer)
+            scaler.update()
+
+        except torch.cuda.OutOfMemoryError:
+            print(f'  E{epoch:>3} | {sid} | OOM — skipping shape')
+            optimizer.zero_grad()
+            if device.type == 'cuda':
+                torch.cuda.empty_cache()
+            continue
 
         t = total.item(); j = lj.item(); c = lc.item(); s = ls.item()
         sum_total += t; sum_j += j; sum_c += c; sum_s += s
@@ -202,7 +217,8 @@ def val_epoch(
         gt_parents= batch['gt_parents'].to(device)
         gt_skin   = batch['gt_skin'].to(device)
 
-        total, lj, lc, ls = model(points, normals, gt_joints, gt_parents, gt_skin)
+        with amp.autocast(dtype=torch.bfloat16):
+            total, lj, lc, ls = model(points, normals, gt_joints, gt_parents, gt_skin)
         sum_total += total.item(); sum_j += lj.item()
         sum_c += lc.item(); sum_s += ls.item()
         n += 1
@@ -260,6 +276,8 @@ def main() -> None:
         optimizer, T_max=args.epochs
     )
 
+    scaler = amp.GradScaler()
+
     start_epoch   = 0
     best_val_loss = float('inf')
 
@@ -268,18 +286,41 @@ def main() -> None:
         print(f'Resuming from {args.resume}')
         ckpt = torch.load(args.resume, map_location=device, weights_only=False)
         incompatible = model.load_state_dict(ckpt['model_state_dict'], strict=False)
+        arch_changed = bool(incompatible.missing_keys or incompatible.unexpected_keys)
         if incompatible.missing_keys:
-            print(f'  [WARN] missing keys : {len(incompatible.missing_keys)}')
+            print(f'  [WARN] missing keys : {len(incompatible.missing_keys)} (new layers random-init)')
         if incompatible.unexpected_keys:
             print(f'  [WARN] unexpected keys (ignored): {len(incompatible.unexpected_keys)}')
-        if 'optimizer_state_dict' in ckpt:
-            optimizer.load_state_dict(ckpt['optimizer_state_dict'])
-        if 'scheduler_state_dict' in ckpt:
-            scheduler.load_state_dict(ckpt['scheduler_state_dict'])
+
         start_epoch   = ckpt.get('epoch', 0) + 1
         best_val_loss = ckpt.get('val_loss', float('inf'))
-        print(f'  Resumed epoch={ckpt.get("epoch", 0)}  val_loss={best_val_loss:.6f}  '
-              f'(optimizer restored: {"optimizer_state_dict" in ckpt})')
+
+        if arch_changed:
+            # New layers in the model — reset optimizer at a conservative warm-start LR
+            # so randomly-initialised blocks don't explode pre-trained ones.
+            warm_lr = 3e-5
+            for pg in optimizer.param_groups:
+                pg['lr'] = warm_lr
+            print(f'  Architecture changed: fresh optimizer  lr={warm_lr}')
+        else:
+            if 'optimizer_state_dict' in ckpt:
+                try:
+                    optimizer.load_state_dict(ckpt['optimizer_state_dict'])
+                except ValueError as e:
+                    print(f'  [WARN] optimizer state skipped: {e}')
+            if 'scaler_state_dict' in ckpt:
+                scaler.load_state_dict(ckpt['scaler_state_dict'])
+
+        # Always rebuild scheduler for the remaining epochs so the cosine
+        # curve covers exactly the epochs we still need to run, regardless
+        # of what T_max was in the saved checkpoint.
+        remaining = max(args.epochs - start_epoch, 1)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=remaining, eta_min=1e-6
+        )
+        print(f'  Scheduler: fresh cosine over {remaining} remaining epochs  '
+              f'(eta_min=1e-6)')
+        print(f'  Resumed epoch={ckpt.get("epoch", 0)}  val_loss={best_val_loss:.6f}')
 
     # ── Sanity check: one forward pass before epoch 1 ─────────────────
     print('Sanity-checking forward pass …')
@@ -312,7 +353,7 @@ def main() -> None:
     use_augment = not args.no_augment
 
     for epoch in range(start_epoch, args.epochs):
-        tr = train_epoch(model, train_loader, optimizer, device, epoch, use_augment)
+        tr = train_epoch(model, train_loader, optimizer, scaler, device, epoch, use_augment)
         vl = val_epoch(model, val_loader, device)
         scheduler.step()
 
@@ -326,13 +367,13 @@ def main() -> None:
 
         if (epoch + 1) % 5 == 0:
             path = os.path.join(ckpt_dir, f'epoch_{epoch}.pt')
-            save_checkpoint(path, epoch, model, optimizer, scheduler, vl[0])
+            save_checkpoint(path, epoch, model, optimizer, scheduler, scaler, vl[0])
             print(f'  Saved periodic → {path}')
 
         if vl[0] < best_val_loss:
             best_val_loss = vl[0]
             best = os.path.join(ckpt_dir, 'best_model.pt')
-            save_checkpoint(best, epoch, model, optimizer, scheduler, vl[0])
+            save_checkpoint(best, epoch, model, optimizer, scheduler, scaler, vl[0])
             print(f'  New best val_loss={vl[0]:.6f} → {best}')
 
     log_file.close()

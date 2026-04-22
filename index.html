@@ -211,8 +211,9 @@
     width: 10px; height: 10px; border-radius: 2px;
   }
 
+  /* ── Section headings ───────────────────────────────────── */
   .section-heading {
-    padding: 14px 16px 4px;
+    padding: 20px 16px 6px;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -223,6 +224,7 @@
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: #ff6b35;
+    white-space: nowrap;
   }
   .section-heading .section-line {
     flex: 1;
@@ -239,6 +241,58 @@
     font-weight: 600;
     letter-spacing: 0.06em;
     white-space: nowrap;
+  }
+
+  /* Adobe-blue tint for paper reference section */
+  .section-heading.adobe h2 { color: #4a9eff; }
+  .section-heading.adobe .section-line {
+    background: linear-gradient(to right, #4a9eff40, transparent);
+  }
+  .section-heading.adobe .section-badge {
+    background: #0a1a2a;
+    border-color: #4a9eff60;
+    color: #4a9eff;
+  }
+
+  /* Sub-headings for model versions */
+  .version-heading {
+    padding: 8px 16px 2px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .version-heading h3 {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #888;
+    white-space: nowrap;
+  }
+  .version-heading .version-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, #88888830, transparent);
+  }
+  .version-badge {
+    background: #1a1a22;
+    border: 1px solid #33334a;
+    color: #888;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .version-badge.v2 {
+    background: #0a2a1a;
+    border-color: #2a6a4a;
+    color: #4aff9a;
+  }
+  .version-heading.v2 h3 { color: #4aff9a; }
+  .version-heading.v2 .version-line {
+    background: linear-gradient(to right, #4aff9a30, transparent);
   }
 </style>
 </head>
@@ -259,6 +313,15 @@
   <span class="badge">SIGGRAPH 2025</span>
 </header>
 
+<!-- ══════════════════════════════════════════════════════════════
+     SECTION 1 — Adobe / Paper Reference Inference
+     ══════════════════════════════════════════════════════════════ -->
+<div class="section-heading adobe">
+  <h2>Adobe Model Inference</h2>
+  <span class="section-badge">Paper Reference · RigAnything</span>
+  <div class="section-line"></div>
+</div>
+
 <div class="col-labels">
   <div class="col-label original"><span class="dot"></span> Original Model</div>
   <div class="col-label predicted"><span class="dot"></span> Predicted Skeleton</div>
@@ -266,7 +329,7 @@
 
 <div class="grid">
 
-  <!-- Row 1: Spyro -->
+  <!-- Row 1: Spyro — Adobe ref -->
   <div class="row">
     <div class="panel" id="panel-spyro-orig">
       <div class="panel-header">
@@ -303,7 +366,7 @@
     </div>
   </div>
 
-  <!-- Row 2: Neo -->
+  <!-- Row 2: Neo — Adobe ref -->
   <div class="row">
     <div class="panel" id="panel-neo-orig">
       <div class="panel-header">
@@ -342,11 +405,20 @@
 
 </div>
 
-<!-- ── Our Model Results ────────────────────────────────────────────────── -->
+<!-- ══════════════════════════════════════════════════════════════
+     SECTION 2 — Our Model Results (Phase 7 End-to-End)
+     ══════════════════════════════════════════════════════════════ -->
 <div class="section-heading">
   <h2>Our Model Results</h2>
   <span class="section-badge">Phase 7 · End-to-End</span>
   <div class="section-line"></div>
+</div>
+
+<!-- ── v1 Sub-heading ── -->
+<div class="version-heading">
+  <h3>Run 1 — 2 Transformer Blocks · 200 Dataset · 50 Epochs</h3>
+  <span class="version-badge">v1 · First Run</span>
+  <div class="version-line"></div>
 </div>
 
 <div class="col-labels">
@@ -356,75 +428,165 @@
 
 <div class="grid">
 
-  <!-- Row 1: Spyro — our prediction -->
+  <!-- Row 1: Spyro — v1 -->
   <div class="row">
-    <div class="panel" id="panel-spyro-pred-orig">
+    <div class="panel" id="panel-spyro-v1-orig">
       <div class="panel-header">
         <div class="panel-title"><span class="icon">🐉</span> Spyro the Dragon</div>
         <div class="panel-meta">Original · GLB · textured</div>
       </div>
       <div class="canvas-wrap">
-        <div class="loading-overlay" id="lo-spyro-pred-orig"><div class="spinner"></div><span class="loading-text">Loading…</span></div>
-        <canvas id="c-spyro-pred-orig"></canvas>
+        <div class="loading-overlay" id="lo-spyro-v1-orig"><div class="spinner"></div><span class="loading-text">Loading…</span></div>
+        <canvas id="c-spyro-v1-orig"></canvas>
       </div>
       <div class="controls-bar">
-        <button class="ctrl-btn active" onclick="toggleWireframe('spyro-pred-orig',this)">Solid</button>
-        <button class="ctrl-btn" onclick="resetCamera('spyro-pred-orig')">Reset</button>
+        <button class="ctrl-btn active" onclick="toggleWireframe('spyro-v1-orig',this)">Solid</button>
+        <button class="ctrl-btn" onclick="resetCamera('spyro-v1-orig')">Reset</button>
         <span class="hint">Drag · Scroll · Right-drag</span>
       </div>
     </div>
 
-    <div class="panel" id="panel-spyro-pred-rig">
+    <div class="panel" id="panel-spyro-v1-rig">
       <div class="panel-header">
-        <div class="panel-title"><span class="icon">🦴</span> Spyro — Our Predicted Rig</div>
-        <div class="panel-meta" id="meta-spyro-pred">Predicting…</div>
+        <div class="panel-title"><span class="icon">🦴</span> Spyro — v1 Predicted Rig</div>
+        <div class="panel-meta" id="meta-spyro-v1">Predicting…</div>
       </div>
       <div class="canvas-wrap">
-        <div class="loading-overlay" id="lo-spyro-pred-rig"><div class="spinner"></div><span class="loading-text">Loading…</span></div>
-        <canvas id="c-spyro-pred-rig"></canvas>
+        <div class="loading-overlay" id="lo-spyro-v1-rig"><div class="spinner"></div><span class="loading-text">Loading…</span></div>
+        <canvas id="c-spyro-v1-rig"></canvas>
       </div>
       <div class="controls-bar">
-        <button class="ctrl-btn active" onclick="toggleMesh('spyro-pred-rig',this)">Mesh</button>
-        <button class="ctrl-btn active" onclick="toggleSkeleton('spyro-pred-rig',this)">Skeleton</button>
-        <button class="ctrl-btn active" onclick="toggleWeights('spyro-pred-rig',this)">Weights</button>
-        <button class="ctrl-btn" onclick="resetCamera('spyro-pred-rig')">Reset</button>
+        <button class="ctrl-btn active" onclick="toggleMesh('spyro-v1-rig',this)">Mesh</button>
+        <button class="ctrl-btn active" onclick="toggleSkeleton('spyro-v1-rig',this)">Skeleton</button>
+        <button class="ctrl-btn active" onclick="toggleWeights('spyro-v1-rig',this)">Weights</button>
+        <button class="ctrl-btn" onclick="resetCamera('spyro-v1-rig')">Reset</button>
         <span class="hint">Drag · Scroll · Right-drag</span>
       </div>
     </div>
   </div>
 
-  <!-- Row 2: Neo — our prediction -->
+  <!-- Row 2: Neo — v1 -->
   <div class="row">
-    <div class="panel" id="panel-neo-pred-orig">
+    <div class="panel" id="panel-neo-v1-orig">
       <div class="panel-header">
         <div class="panel-title"><span class="icon">🤖</span> Neo Crispytyph</div>
         <div class="panel-meta">Original · GLB · textured</div>
       </div>
       <div class="canvas-wrap">
-        <div class="loading-overlay" id="lo-neo-pred-orig"><div class="spinner"></div><span class="loading-text">Loading…</span></div>
-        <canvas id="c-neo-pred-orig"></canvas>
+        <div class="loading-overlay" id="lo-neo-v1-orig"><div class="spinner"></div><span class="loading-text">Loading…</span></div>
+        <canvas id="c-neo-v1-orig"></canvas>
       </div>
       <div class="controls-bar">
-        <button class="ctrl-btn active" onclick="toggleWireframe('neo-pred-orig',this)">Solid</button>
-        <button class="ctrl-btn" onclick="resetCamera('neo-pred-orig')">Reset</button>
+        <button class="ctrl-btn active" onclick="toggleWireframe('neo-v1-orig',this)">Solid</button>
+        <button class="ctrl-btn" onclick="resetCamera('neo-v1-orig')">Reset</button>
         <span class="hint">Drag · Scroll · Right-drag</span>
       </div>
     </div>
 
-    <div class="panel" id="panel-neo-pred-rig">
+    <div class="panel" id="panel-neo-v1-rig">
       <div class="panel-header">
-        <div class="panel-title"><span class="icon">🦴</span> Neo — Our Predicted Rig</div>
-        <div class="panel-meta" id="meta-neo-pred">Predicting…</div>
+        <div class="panel-title"><span class="icon">🦴</span> Neo — v1 Predicted Rig</div>
+        <div class="panel-meta" id="meta-neo-v1">Predicting…</div>
       </div>
       <div class="canvas-wrap">
-        <div class="loading-overlay" id="lo-neo-pred-rig"><div class="spinner"></div><span class="loading-text">Loading…</span></div>
-        <canvas id="c-neo-pred-rig"></canvas>
+        <div class="loading-overlay" id="lo-neo-v1-rig"><div class="spinner"></div><span class="loading-text">Loading…</span></div>
+        <canvas id="c-neo-v1-rig"></canvas>
       </div>
       <div class="controls-bar">
-        <button class="ctrl-btn active" onclick="toggleMesh('neo-pred-rig',this)">Mesh</button>
-        <button class="ctrl-btn active" onclick="toggleSkeleton('neo-pred-rig',this)">Skeleton</button>
-        <button class="ctrl-btn active" onclick="toggleWeights('neo-pred-rig',this)">Weights</button>
-        <button class="ctrl-btn" onclick="resetCamera('neo-pred-rig')">Reset</button>
+        <button class="ctrl-btn active" onclick="toggleMesh('neo-v1-rig',this)">Mesh</button>
+        <button class="ctrl-btn active" onclick="toggleSkeleton('neo-v1-rig',this)">Skeleton</button>
+        <button class="ctrl-btn active" onclick="toggleWeights('neo-v1-rig',this)">Weights</button>
+        <button class="ctrl-btn" onclick="resetCamera('neo-v1-rig')">Reset</button>
+        <span class="hint">Drag · Scroll · Right-drag</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── v2 Sub-heading ── -->
+<div class="version-heading v2">
+  <h3>Run 2 — 5 Transformer Blocks · 500 Dataset · 70 Epochs</h3>
+  <span class="version-badge v2">v2 · Current</span>
+  <div class="version-line"></div>
+</div>
+
+<div class="col-labels">
+  <div class="col-label original"><span class="dot"></span> Original Model</div>
+  <div class="col-label predicted"><span class="dot"></span> Predicted Skeleton</div>
+</div>
+
+<div class="grid">
+
+  <!-- Row 1: Spyro — v2 -->
+  <div class="row">
+    <div class="panel" id="panel-spyro-v2-orig">
+      <div class="panel-header">
+        <div class="panel-title"><span class="icon">🐉</span> Spyro the Dragon</div>
+        <div class="panel-meta">Original · GLB · textured</div>
+      </div>
+      <div class="canvas-wrap">
+        <div class="loading-overlay" id="lo-spyro-v2-orig"><div class="spinner"></div><span class="loading-text">Loading…</span></div>
+        <canvas id="c-spyro-v2-orig"></canvas>
+      </div>
+      <div class="controls-bar">
+        <button class="ctrl-btn active" onclick="toggleWireframe('spyro-v2-orig',this)">Solid</button>
+        <button class="ctrl-btn" onclick="resetCamera('spyro-v2-orig')">Reset</button>
+        <span class="hint">Drag · Scroll · Right-drag</span>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-spyro-v2-rig">
+      <div class="panel-header">
+        <div class="panel-title"><span class="icon">🦴</span> Spyro — v2 Predicted Rig</div>
+        <div class="panel-meta" id="meta-spyro-v2">Predicting…</div>
+      </div>
+      <div class="canvas-wrap">
+        <div class="loading-overlay" id="lo-spyro-v2-rig"><div class="spinner"></div><span class="loading-text">Loading…</span></div>
+        <canvas id="c-spyro-v2-rig"></canvas>
+      </div>
+      <div class="controls-bar">
+        <button class="ctrl-btn active" onclick="toggleMesh('spyro-v2-rig',this)">Mesh</button>
+        <button class="ctrl-btn active" onclick="toggleSkeleton('spyro-v2-rig',this)">Skeleton</button>
+        <button class="ctrl-btn active" onclick="toggleWeights('spyro-v2-rig',this)">Weights</button>
+        <button class="ctrl-btn" onclick="resetCamera('spyro-v2-rig')">Reset</button>
+        <span class="hint">Drag · Scroll · Right-drag</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Neo — v2 -->
+  <div class="row">
+    <div class="panel" id="panel-neo-v2-orig">
+      <div class="panel-header">
+        <div class="panel-title"><span class="icon">🤖</span> Neo Crispytyph</div>
+        <div class="panel-meta">Original · GLB · textured</div>
+      </div>
+      <div class="canvas-wrap">
+        <div class="loading-overlay" id="lo-neo-v2-orig"><div class="spinner"></div><span class="loading-text">Loading…</span></div>
+        <canvas id="c-neo-v2-orig"></canvas>
+      </div>
+      <div class="controls-bar">
+        <button class="ctrl-btn active" onclick="toggleWireframe('neo-v2-orig',this)">Solid</button>
+        <button class="ctrl-btn" onclick="resetCamera('neo-v2-orig')">Reset</button>
+        <span class="hint">Drag · Scroll · Right-drag</span>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-neo-v2-rig">
+      <div class="panel-header">
+        <div class="panel-title"><span class="icon">🦴</span> Neo — v2 Predicted Rig</div>
+        <div class="panel-meta" id="meta-neo-v2">Predicting…</div>
+      </div>
+      <div class="canvas-wrap">
+        <div class="loading-overlay" id="lo-neo-v2-rig"><div class="spinner"></div><span class="loading-text">Loading…</span></div>
+        <canvas id="c-neo-v2-rig"></canvas>
+      </div>
+      <div class="controls-bar">
+        <button class="ctrl-btn active" onclick="toggleMesh('neo-v2-rig',this)">Mesh</button>
+        <button class="ctrl-btn active" onclick="toggleSkeleton('neo-v2-rig',this)">Skeleton</button>
+        <button class="ctrl-btn active" onclick="toggleWeights('neo-v2-rig',this)">Weights</button>
+        <button class="ctrl-btn" onclick="resetCamera('neo-v2-rig')">Reset</button>
         <span class="hint">Drag · Scroll · Right-drag</span>
       </div>
     </div>
@@ -448,13 +610,12 @@ import { GLTFLoader }    from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // ─── Global registry ───────────────────────────────────────────────────────
-const viewers = {};        // id → { scene, camera, renderer, controls, ... }
-const JOINT_COLORS = [];   // per-joint hue
+const viewers = {};
 
 function buildJointColors(n) {
   const cols = [];
   for (let i = 0; i < n; i++) {
-    const h = (i / n) * 300;  // red→purple, 300° of hue wheel
+    const h = (i / n) * 300;
     cols.push(new THREE.Color().setHSL(h / 360, 0.85, 0.55));
   }
   return cols;
@@ -462,7 +623,7 @@ function buildJointColors(n) {
 
 // ─── Progress helper ───────────────────────────────────────────────────────
 let loadedCount = 0;
-const TOTAL_LOADS = 8;
+const TOTAL_LOADS = 16;   // 4 shared GLBs × 4 panels each = 16 panel loads
 function tickProgress() {
   loadedCount++;
   document.getElementById('progress-bar').style.width =
@@ -489,7 +650,6 @@ function createViewer(canvasId) {
   const scene  = new THREE.Scene();
   scene.background = new THREE.Color(0x0e0e14);
 
-  // Lighting
   const ambient = new THREE.AmbientLight(0xffffff, 0.6);
   scene.add(ambient);
   const dir1 = new THREE.DirectionalLight(0xffeedd, 1.2);
@@ -507,7 +667,6 @@ function createViewer(canvasId) {
   controls.dampingFactor = 0.08;
   controls.screenSpacePanning = true;
 
-  // Grid
   const grid = new THREE.GridHelper(6, 20, 0x1a1a2a, 0x161620);
   grid.position.y = -1.2;
   scene.add(grid);
@@ -519,7 +678,6 @@ function createViewer(canvasId) {
                defaultCamPos: null, defaultTarget: null };
   viewers[canvasId.replace('c-', '')] = v;
 
-  // Resize observer
   new ResizeObserver(() => resize(v)).observe(wrap);
   resize(v);
 
@@ -557,7 +715,6 @@ function loadGLBFromB64(b64, viewer, options = {}) {
     const buf = b64ToArrayBuffer(b64);
     loader.parse(buf, '', gltf => {
       const model = gltf.scene;
-      // Center + fit
       const box = new THREE.Box3().setFromObject(model);
       const cen = box.getCenter(new THREE.Vector3());
       const siz = box.getSize(new THREE.Vector3());
@@ -575,7 +732,6 @@ function loadGLBFromB64(b64, viewer, options = {}) {
       viewer.scene.add(model);
       viewer.meshGroup = model;
 
-      // Fit camera
       const box2 = new THREE.Box3().setFromObject(model);
       const cen2 = box2.getCenter(new THREE.Vector3());
       const siz2 = box2.getSize(new THREE.Vector3());
@@ -595,7 +751,6 @@ function loadGLBFromB64(b64, viewer, options = {}) {
 // ─── Build skeleton overlay ────────────────────────────────────────────────
 function buildSkeleton(joints, parents, jointColors) {
   const group = new THREE.Group();
-
   const sphereGeo = new THREE.SphereGeometry(0.018, 10, 8);
 
   joints.forEach((j, i) => {
@@ -610,7 +765,6 @@ function buildSkeleton(joints, parents, jointColors) {
     sphere.position.set(j[0], j[1], j[2]);
     group.add(sphere);
 
-    // Bone line to parent
     const p = parents[i];
     if (i > 0 && p !== i) {
       const start = new THREE.Vector3(...joints[p]);
@@ -687,7 +841,6 @@ async function loadRigPanel(canvasId, b64, modelData, onReady) {
 
   const jColors = buildJointColors(modelData.num_joints);
 
-  // Simplified mesh (slightly transparent)
   const model = await loadGLBFromB64(b64, v);
   model.traverse(c => {
     if (c.isMesh) {
@@ -698,40 +851,8 @@ async function loadRigPanel(canvasId, b64, modelData, onReady) {
     }
   });
 
-  // Fit to mesh bounds and translate skeleton to match
-  const box = new THREE.Box3().setFromObject(model);
-  const cen = box.getCenter(new THREE.Vector3());
-  const siz = box.getSize(new THREE.Vector3());
-  const scale = 2.0 / Math.max(siz.x, siz.y, siz.z);
-
-  // Transform joints to match scaled model
-  // Model was centered and scaled: pos = (origPos - center) * scale
-  // We need the original mesh center BEFORE any model transforms.
-  // Actually loadGLBFromB64 scales by 2/maxDim and translates by -center*scale.
-  // The npz joints are in the same coordinate space as the simplified mesh before those transforms.
-  // So we apply the same transform to joints.
-
-  // Get original bbox before our scale/translate applied in loadGLBFromB64
-  // We need to recompute from the GLB's raw scene
-  // Instead, let's compute the inverse of what we did:
-  //   model.position = -center*scale, model.scale = scale
-  //   => world_joint = joint * scale + model.position
-  //                  = joint * scale - center * scale
-  //                  = (joint - center) * scale  ... but center was pre-scale
-  // Actually we computed box BEFORE applying scale/translate, then:
-  //   scale = 2/maxDim
-  //   model.position.sub(cen * scale)   => model.position = -cen * scale
-  //   model.scale = scale
-  // So joint_world = joint * scale + model.position
-  //               = joint * scale - cen * scale
-  //               = (joint - cen) * scale
-
-  // Extract the actual transform from the model
   const modelScale = model.scale.x;
   const modelPos   = model.position.clone();
-
-  // Re-compute the original bounding box center from the model's stored transforms:
-  // model.position = -cen_orig * scale  =>  cen_orig = -model.position / scale
   const cenOrig = modelPos.clone().divideScalar(-modelScale);
 
   function transformJoint(j) {
@@ -742,29 +863,24 @@ async function loadRigPanel(canvasId, b64, modelData, onReady) {
     );
   }
 
-  // Transform all joints
   const transformedJoints = modelData.joints.map(j => {
     const v3 = transformJoint(j);
     return [v3.x, v3.y, v3.z];
   });
 
-  // Transform point cloud
   const transformedPC = modelData.pointcloud.map(p => {
     const v3 = transformJoint(p);
     return [v3.x, v3.y, v3.z];
   });
 
-  // Build skeleton
   const skelGroup = buildSkeleton(transformedJoints, modelData.parents, jColors);
   v.scene.add(skelGroup);
   v.skelGroup = skelGroup;
 
-  // Build weight cloud
   const weightCloud = buildWeightCloud(transformedPC, modelData.dominant, jColors);
   v.scene.add(weightCloud);
   v.weightsGroup = weightCloud;
 
-  // Hide loading
   if (onReady) onReady();
   lo.classList.add('hidden');
   setTimeout(() => lo.remove(), 500);
@@ -832,30 +948,57 @@ async function main() {
 
   bar.style.width = '5%';
   const resp = await fetch('viewer_data.json');
-  bar.style.width = '20%';
+  bar.style.width = '15%';
   const data = await resp.json();
-  bar.style.width = '40%';
+  bar.style.width = '25%';
 
-  // Fire all eight panels in parallel
+  // All 16 panels load in parallel — progress ticks at key milestones
   const tasks = [
-    loadOrigPanel('c-spyro-orig',      data.spyro_original_b64).then(() => { bar.style.width = '50%'; }),
-    loadRigPanel ('c-spyro-rig',       data.spyro_simp_b64,  data.spyro_the_dragon).then(() => { bar.style.width = '57%'; }),
-    loadOrigPanel('c-neo-orig',        data.neo_original_b64).then(() => { bar.style.width = '64%'; }),
-    loadRigPanel ('c-neo-rig',         data.neo_simp_b64,    data.neo_crispytyph).then(() => { bar.style.width = '71%'; }),
-    loadOrigPanel('c-spyro-pred-orig', data.spyro_original_b64).then(() => { bar.style.width = '78%'; }),
-    loadRigPanel ('c-spyro-pred-rig',  data.spyro_simp_b64,  data.spyro_the_dragon_pred,
+    // ── Adobe / Paper reference ──────────────────────────────────────────
+    loadOrigPanel('c-spyro-orig',      data.spyro_original_b64)
+      .then(() => { bar.style.width = '30%'; }),
+    loadRigPanel ('c-spyro-rig',       data.spyro_simp_b64,  data.spyro_the_dragon)
+      .then(() => { bar.style.width = '36%'; }),
+    loadOrigPanel('c-neo-orig',        data.neo_original_b64)
+      .then(() => { bar.style.width = '40%'; }),
+    loadRigPanel ('c-neo-rig',         data.neo_simp_b64,    data.neo_crispytyph)
+      .then(() => { bar.style.width = '46%'; }),
+
+    // ── Our model — v1 (2 blocks · 200 data · 50 epochs) ─────────────────
+    loadOrigPanel('c-spyro-v1-orig',   data.spyro_original_b64)
+      .then(() => { bar.style.width = '52%'; }),
+    loadRigPanel ('c-spyro-v1-rig',    data.spyro_simp_b64,  data.spyro_the_dragon_pred_v1,
       () => {
-        const m = data.spyro_the_dragon_pred;
-        document.getElementById('meta-spyro-pred').textContent =
-          `${m.num_joints} joints · 1 024 pts · Phase 7`;
-      }).then(() => { bar.style.width = '85%'; }),
-    loadOrigPanel('c-neo-pred-orig',   data.neo_original_b64).then(() => { bar.style.width = '92%'; }),
-    loadRigPanel ('c-neo-pred-rig',    data.neo_simp_b64,    data.neo_crispytyph_pred,
+        const m = data.spyro_the_dragon_pred_v1;
+        document.getElementById('meta-spyro-v1').textContent =
+          `${m.num_joints} joints · 1 024 pts · v1`;
+      }).then(() => { bar.style.width = '60%'; }),
+    loadOrigPanel('c-neo-v1-orig',     data.neo_original_b64)
+      .then(() => { bar.style.width = '64%'; }),
+    loadRigPanel ('c-neo-v1-rig',      data.neo_simp_b64,    data.neo_crispytyph_pred_v1,
       () => {
-        const m = data.neo_crispytyph_pred;
-        document.getElementById('meta-neo-pred').textContent =
-          `${m.num_joints} joints · 1 024 pts · Phase 7`;
-      }).then(() => { bar.style.width = '99%'; }),
+        const m = data.neo_crispytyph_pred_v1;
+        document.getElementById('meta-neo-v1').textContent =
+          `${m.num_joints} joints · 1 024 pts · v1`;
+      }).then(() => { bar.style.width = '70%'; }),
+
+    // ── Our model — v2 (5 blocks · 500 data · 70 epochs) ─────────────────
+    loadOrigPanel('c-spyro-v2-orig',   data.spyro_original_b64)
+      .then(() => { bar.style.width = '76%'; }),
+    loadRigPanel ('c-spyro-v2-rig',    data.spyro_simp_b64,  data.spyro_the_dragon_pred_v2,
+      () => {
+        const m = data.spyro_the_dragon_pred_v2;
+        document.getElementById('meta-spyro-v2').textContent =
+          `${m.num_joints} joints · 1 024 pts · v2`;
+      }).then(() => { bar.style.width = '84%'; }),
+    loadOrigPanel('c-neo-v2-orig',     data.neo_original_b64)
+      .then(() => { bar.style.width = '88%'; }),
+    loadRigPanel ('c-neo-v2-rig',      data.neo_simp_b64,    data.neo_crispytyph_pred_v2,
+      () => {
+        const m = data.neo_crispytyph_pred_v2;
+        document.getElementById('meta-neo-v2').textContent =
+          `${m.num_joints} joints · 1 024 pts · v2`;
+      }).then(() => { bar.style.width = '96%'; }),
   ];
 
   await Promise.all(tasks);

@@ -196,6 +196,7 @@ def main() -> None:
                        help='Path to a .glb file — preprocessed on the fly')
     parser.add_argument('--checkpoint', type=str,
                         default='checkpoints/phase7/best_model.pt')
+    parser.add_argument('--out_dir',    type=str, default='output/phase7')
     parser.add_argument('--max_joints', type=int, default=64)
     parser.add_argument('--device',     type=str, default=None)
     args = parser.parse_args()
@@ -212,7 +213,7 @@ def main() -> None:
         print(f'ERROR: checkpoint not found: {ckpt_path}')
         sys.exit(1)
 
-    out_dir = resolve('output/phase7')
+    out_dir = resolve(args.out_dir)
     os.makedirs(out_dir, exist_ok=True)
 
     # ── Resolve shape_id and pointcloud ──────────────────────────
@@ -251,7 +252,7 @@ def main() -> None:
     np.save(os.path.join(out_dir, f'{shape_id}_joints.npy'),  result['joints'])
     np.save(os.path.join(out_dir, f'{shape_id}_parents.npy'), result['parents'])
     np.save(os.path.join(out_dir, f'{shape_id}_weights.npy'), W)
-    print(f'  Saved → output/phase7/{shape_id}_{{joints,parents,weights}}.npy')
+    print(f'  Saved → {args.out_dir}/{shape_id}_{{joints,parents,weights}}.npy')
 
 
 if __name__ == '__main__':

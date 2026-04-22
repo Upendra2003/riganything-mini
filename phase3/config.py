@@ -19,7 +19,7 @@ class Config:
     n_heads:    int   = 16        # number of attention heads
     d_k:        int   = 64        # keys/queries per head (= d // n_heads)
     ffn_dim:    int   = 4096      # feed-forward hidden dimension
-    n_layers:   int   = 2         # number of transformer blocks
+    n_layers:   int   = 10         # number of transformer blocks
     L:          int   = 1024      # fixed shape-token count (matches Phase 2 output)
 
     # ── Training ───────────────────────────────────────────────────
@@ -39,4 +39,4 @@ class Config:
     # ── Hardware / precision ───────────────────────────────────────
     device:              str  = 'cuda' if torch.cuda.is_available() else 'cpu'
     use_amp:             bool = True   # automatic mixed precision (fp16 forward)
-    use_grad_checkpoint: bool = False  # trade ~30% speed for ~70% activation memory
+    use_grad_checkpoint: bool = True   # trade ~30% speed for ~70% activation memory
