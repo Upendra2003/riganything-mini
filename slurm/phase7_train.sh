@@ -34,14 +34,14 @@ export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
 # ── Verify CUDA is actually available ────────────────────────────────────
 python -c "import torch; assert torch.cuda.is_available(), 'CUDA not available — check PyTorch/driver version mismatch'; print('CUDA OK:', torch.version.cuda, '|', torch.cuda.get_device_name(0))"
 
-# ── Resume if checkpoint exists ───────────────────────────────────────────
+# ── Fine-tune from ep138 with regularization (dropout 0.35, wd_skinner=1e-4)
 CKPT="checkpoints/phase7/best_model.pt"
 if [ -f "$CKPT" ]; then
-    echo "Resuming from $CKPT"
-    python phase7/train.py --epochs 50 --max_shapes 200 --resume "$CKPT"
+    echo "Fine-tuning from $CKPT"
+    python phase7/train.py --epochs 160 --max_shapes 2000 --finetune "$CKPT"
 else
     echo "Starting fresh (no checkpoint found at $CKPT)"
-    python phase7/train.py --epochs 50 --max_shapes 200
+    python phase7/train.py --epochs 160 --max_shapes 2000
 fi
 
 echo "======================================================"

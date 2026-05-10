@@ -165,18 +165,25 @@ def train_epoch(
             except Exception as e:
                 pass  # fall back to un-augmented on rare numerical issues
 
-        total, lj, lc, ls = model(points, normals, gt_joints, gt_parents, gt_skin)
+        try:
+            total, lj, lc, ls = model(points, normals, gt_joints, gt_parents, gt_skin)
 
-        optimizer.zero_grad()
-        total.backward()
-        clip_grad_norm_(model.parameters(), max_norm=1.0)
-        optimizer.step()
+            optimizer.zero_grad()
+            total.backward()
+            clip_grad_norm_(model.parameters(), max_norm=1.0)
+            optimizer.step()
 
-        t = total.item(); j = lj.item(); c = lc.item(); s = ls.item()
-        sum_total += t; sum_j += j; sum_c += c; sum_s += s
-        n += 1
+            t = total.item(); j = lj.item(); c = lc.item(); s = ls.item()
+            sum_total += t; sum_j += j; sum_c += c; sum_s += s
+            n += 1
 
-        print(f'  E{epoch:>3} | {sid} | total={t:.4f}  j={j:.4f}  c={c:.4f}  s={s:.4f}')
+            print(f'  E{epoch:>3} | {sid} | total={t:.4f}  j={j:.4f}  c={c:.4f}  s={s:.4f}')
+
+        except torch.cuda.OutOfMemoryError:
+            optimizer.zero_grad()
+            torch.cuda.empty_cache()
+            print(f'  E{epoch:>3} | {sid} | OOM — skipping shape')
+            continue
 
         if device.type == 'cuda':
             torch.cuda.empty_cache()
@@ -216,10 +223,13 @@ def val_epoch(
 # ---------------------------------------------------------------------------
 def main() -> None:
     parser = argparse.ArgumentParser(description='Phase 7 — End-to-End Training')
-    parser.add_argument('--epochs',     type=int,   default=50)
+    parser.add_argument('--epochs',     type=int,   default=150)
     parser.add_argument('--resume',     type=str,   default=None)
+    parser.add_argument('--finetune',   type=str,   default=None,
+                        help='Load weights only (reset optimizer+scheduler); '
+                             'use for anti-overfit continuation at epoch 138+')
     parser.add_argument('--no_augment', action='store_true')
-    parser.add_argument('--max_shapes', type=int,   default=None)
+    parser.add_argument('--max_shapes', type=int,   default=1000)
     parser.add_argument('--device',     type=str,   default=None)
     args = parser.parse_args()
 
@@ -253,9 +263,16 @@ def main() -> None:
     warm_start(model, ROOT, device)
 
     # ── Optimizer + scheduler ─────────────────────────────────────────
-    optimizer = torch.optim.AdamW(
-        model.parameters(), lr=1e-4, weight_decay=1e-5, betas=(0.9, 0.999)
-    )
+    def make_optimizer(lr: float, wd_default: float, wd_skinner: float):
+        skinner_ids = {id(p) for p in model.skinner.parameters()}
+        skinner_params = [p for p in model.parameters() if id(p) in skinner_ids]
+        other_params   = [p for p in model.parameters() if id(p) not in skinner_ids]
+        return torch.optim.AdamW([
+            {'params': other_params,   'weight_decay': wd_default},
+            {'params': skinner_params, 'weight_decay': wd_skinner},
+        ], lr=lr, betas=(0.9, 0.999))
+
+    optimizer = make_optimizer(lr=1e-4, wd_default=1e-5, wd_skinner=1e-5)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, T_max=args.epochs
     )
@@ -263,7 +280,7 @@ def main() -> None:
     start_epoch   = 0
     best_val_loss = float('inf')
 
-    # ── Resume ────────────────────────────────────────────────────────
+    # ── Resume (full state restore) ───────────────────────────────────
     if args.resume:
         print(f'Resuming from {args.resume}')
         ckpt = torch.load(args.resume, map_location=device, weights_only=False)
@@ -280,6 +297,25 @@ def main() -> None:
         best_val_loss = ckpt.get('val_loss', float('inf'))
         print(f'  Resumed epoch={ckpt.get("epoch", 0)}  val_loss={best_val_loss:.6f}  '
               f'(optimizer restored: {"optimizer_state_dict" in ckpt})')
+
+    # ── Finetune (weights only — fresh optimizer/scheduler) ───────────
+    if args.finetune:
+        print(f'Fine-tuning from {args.finetune}  (resetting optimizer + scheduler)')
+        ckpt = torch.load(args.finetune, map_location=device, weights_only=False)
+        incompatible = model.load_state_dict(ckpt['model_state_dict'], strict=False)
+        if incompatible.missing_keys:
+            print(f'  [WARN] missing keys : {len(incompatible.missing_keys)}')
+        start_epoch   = ckpt.get('epoch', 0) + 1
+        best_val_loss = ckpt.get('val_loss', float('inf'))
+        # Fresh optimizer: skinner gets 10× more weight decay to fight overfitting
+        optimizer = make_optimizer(lr=2e-5, wd_default=1e-5, wd_skinner=1e-4)
+        finetune_epochs = args.epochs - start_epoch
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=max(finetune_epochs, 1)
+        )
+        print(f'  Fresh AdamW: lr=2e-5  wd_skinner=1e-4  '
+              f'cosine T_max={max(finetune_epochs,1)}  '
+              f'start_epoch={start_epoch}')
 
     # ── Sanity check: one forward pass before epoch 1 ─────────────────
     print('Sanity-checking forward pass …')

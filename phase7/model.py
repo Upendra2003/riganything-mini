@@ -68,7 +68,7 @@ class RigAnythingModel(nn.Module):
         self,
         d:        int = 1024,
         L:        int = 1024,
-        n_layers: int = 2,
+        n_layers: int = 5,
         n_heads:  int = 16,
         ffn_dim:  int = 4096,
         M:        int = 1000,
@@ -133,17 +133,18 @@ class RigAnythingModel(nn.Module):
         H     = self.shape_tok(pc_in)                  # [L, d]
 
         # ── STEP 2: Autoregressive loop (teacher-forced) ───────────────
-        # T_prev_detached: used for transformer input (graph-bounded)
-        # T_prev_grad:     rebuilt at end with gradient for skel_tok training
+        # T_prev_detached: detached tokens for transformer input (bounds graph size)
+        # T_prev_fresh:    non-detached tokens for connectivity scorer (grad → skel_tok)
         T_prev_detached: list[torch.Tensor] = []
+        T_prev_fresh:    list[torch.Tensor] = []
 
         loss_joint   = torch.zeros((), device=device)
         loss_connect = torch.zeros((), device=device)
 
         for k in range(1, K + 1):
-            # Build T_stack from detached cache
+            # Build T_stack from detached cache (keeps transformer graph size flat)
             if T_prev_detached:
-                T_stack = torch.stack(T_prev_detached)   # [k-1, d]
+                T_stack = torch.stack(T_prev_detached)   # [k-1, d], detached
             else:
                 T_stack = H.new_zeros(0, self.d)
 
@@ -161,27 +162,27 @@ class RigAnythingModel(nn.Module):
 
             # ── Connectivity loss (skip root k=1) ─────────────────────
             if k > 1:
+                # Use non-detached T_prev so gradients reach skel_tok
+                T_stack_fresh = torch.stack(T_prev_fresh)    # [k-1, d], non-detached
                 Z_prime  = self.fuser(Z_k, j0_gt, k)
-                q_k      = self.connector(Z_prime, T_stack)
+                q_k      = self.connector(Z_prime, T_stack_fresh)
                 true_idx = int(gt_parents[k - 1].item()) - 1
                 true_idx = max(0, min(true_idx, k - 2))
                 loss_connect = loss_connect + connectivity_loss(q_k, true_idx) / K
 
-            # ── Teacher-force: compute T_k, detach for next iteration ──
+            # ── Teacher-force: compute T_k ─────────────────────────────
             parent_0idx = int(gt_parents[k - 1].item()) - 1
-            parent_0idx = max(0, min(parent_0idx, k - 1))  # clamp to valid range
+            parent_0idx = max(0, min(parent_0idx, k - 1))
             parent_pos  = gt_joints[parent_0idx]           # [3]
-            # Pass [j_k, parent_pos]; parent_indices=[1,1]: j_k's parent is index 1,
-            # parent_pos's parent is itself (index 1) — we only use output[0].
             T_k = self.skel_tok(
                 torch.stack([j0_gt, parent_pos]),          # [2, 3]
-                torch.tensor([1, 1], device=device),       # both point to index 1
+                torch.tensor([1, 1], device=device),
             )[0]                                           # [d]
             T_prev_detached.append(T_k.detach())
+            T_prev_fresh.append(T_k)                       # keep non-detached for connectivity
 
         # ── STEP 3: Skinning loss ──────────────────────────────────────
-        # Recompute T_all WITHOUT detaching so SkeletonTokenizer receives
-        # gradients through the skinning loss path.
+        # 3a: Recompute T_all without detaching → gradients reach skel_tok
         T_all_list = []
         for k in range(K):
             parent_0idx = int(gt_parents[k].item()) - 1
@@ -189,12 +190,20 @@ class RigAnythingModel(nn.Module):
             parent_pos  = gt_joints[parent_0idx]           # [3]
             T_k_grad = self.skel_tok(
                 torch.stack([gt_joints[k], parent_pos]),   # [2, 3]
-                torch.tensor([1, 1], device=device),       # both point to index 1
+                torch.tensor([1, 1], device=device),
             )[0]                                           # [d]
             T_all_list.append(T_k_grad)
 
-        T_all  = torch.stack(T_all_list)                   # [K, d]
-        W_pred = self.skinner(H, T_all)                    # [L, K]
+        T_all = torch.stack(T_all_list)                    # [K, d]
+
+        # 3b: One extra transformer pass with all K tokens → enriched shape tokens.
+        # The skinner needs the transformer's cross-attended shape representations,
+        # not the raw tokenizer output, so it can associate surface regions with joints.
+        T_stack_all = torch.stack(T_prev_detached)         # [K, d], detached
+        Z_final     = self.transformer(H, T_stack_all)     # [L+K, d]
+        H_enriched  = Z_final[:self.L]                     # [L, d]
+
+        W_pred    = self.skinner(H_enriched, T_all)        # [L, K]
         loss_skin = skinning_loss(W_pred, gt_skin)
 
         # ── STEP 4: Combine ───────────────────────────────────────────

@@ -8,7 +8,7 @@ predict which of the k-1 previously generated joints is the parent of joint k.
 Architecture:
   FusingModule:       MLP(Z_k.mean + j_k + gamma(k)) → Z'_k  [d]
   ConnectivityModule: score each T_prev[i] paired with Z'_k → softmax → q_k
-  connectivity_loss:  BCE over one-hot parent target
+  connectivity_loss:  cross-entropy over softmax parent distribution
 
 Usage:
   PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True .venv/bin/python phase5/train.py --epochs 30
@@ -120,7 +120,7 @@ def connectivity_loss(
     true_parent_idx: int,
 ) -> torch.Tensor:
     """
-    Binary cross-entropy over the one-hot parent distribution.
+    Cross-entropy loss over the parent distribution.
 
     Args:
         q_k:             [k-1]  predicted distribution (softmax output)
@@ -129,8 +129,4 @@ def connectivity_loss(
     Returns:
         scalar loss tensor
     """
-    k_minus_1 = q_k.shape[0]
-    y_hat = torch.zeros(k_minus_1, device=q_k.device, dtype=q_k.dtype)
-    y_hat[true_parent_idx] = 1.0
-    loss = -(y_hat * torch.log(q_k + 1e-8) + (1.0 - y_hat) * torch.log(1.0 - q_k + 1e-8))
-    return loss.sum()
+    return -torch.log(q_k[true_parent_idx] + 1e-8)

@@ -46,6 +46,7 @@ class SkinningModule(nn.Module):
         self.scorer = nn.Sequential(
             nn.Linear(2 * d, 1024),
             nn.ReLU(),
+            nn.Dropout(p=0.35),
             nn.Linear(1024, 1),
         )
 
